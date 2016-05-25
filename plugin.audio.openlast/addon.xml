@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.audio.openlast" name="openlast" version="6.2.0" provider-name="openlast author">
+    <requires>
+        <import addon="xbmc.python" version="2.1.0"/>
+        <import addon="script.module.simplejson" version="3.3.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>audio</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <language>en</language>
+        <license>GPL 3.0</license>
+        <!--forum>http://forum.kodi.tv/showthread.php?tid=223813</forum-->
+        <website>http://openlast.wkia.net.ru</website>
+        <!--source>https://github.com/Bitcrusher/Rockradio-com-XBMC-plugin</source-->
+        <summary lang="en">openlast radio</summary>
+        <description lang="en">
+            openlast radio description
+        </description>
+    </extension>
+</addon>
+
