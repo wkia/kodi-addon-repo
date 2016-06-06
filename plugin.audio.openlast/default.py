@@ -12,26 +12,6 @@ else:
 
 xbmc.log('openlast: start -----------------------------------------------------')
 
-
-class MyPlayer(xbmc.Player):
-
-    def __init__(self, *args):
-        xbmc.log('openlast: player created')
-        xbmc.Player.__init__(self)
-
-    def onPlayBackStarted(self):
-        xbmc.log('openlast: player playback started')
-        pass
-
-    def onPlayBackEnded(self):
-        xbmc.log('openlast: player playback ended')
-        pass
-
-    def onPlaybackStopped(self):
-        xbmc.log('openlast: player playback stopped')
-        pass
-
-
 #__settings__ = xbmcaddon.Addon(id='xbmc-vk.svoka.com')
 #__language__ = __settings__.getLocalizedString
 
@@ -53,6 +33,174 @@ xbmcplugin.setContent(addon_handle, 'audio')
 
 def build_url(baseUrl, query):
     return baseUrl + '?' + urllib.urlencode(query)
+
+
+def loadLovedTracks(username, page):
+    url = build_url(lastfmApi, {'method': 'user.getlovedtracks', 'user': username,
+                                'format': 'json', 'api_key': lastfmApiKey, 'limit': 200, 'page': page})
+    # xbmc.log(url)
+    reply = urllib.urlopen(url)
+    # xbmc.log(str(reply))
+    resp = json.load(reply)
+    if "error" in resp:
+        raise Exception("Error! DATA: " + str(resp))
+    else:
+        # xbmc.log(str(resp))
+        xbmc.log('Successfully loaded loved tracks, page:' + str(page))
+
+    return resp
+
+
+def loadAllLovedTracks(username):
+    xbmc.log('Loading loved tracks')
+    loaded = False
+    page = 1
+    artists = {}
+    while (True != loaded):
+        resp = loadLovedTracks(username, page)
+
+        # for a in resp['lovedtracks']['@attr']:
+        #    xbmc.log(str(a) + ': ' + resp['lovedtracks']['@attr'][str(a)])
+
+        # Track the page number
+        totalPages = int(resp['lovedtracks']['@attr']['totalPages'])
+        page += 1
+        loaded = (page > totalPages)
+
+        for t in resp['lovedtracks']['track']:
+            # xbmc.log(json.dumps(t).encode('utf-8'))
+            trackname = t['name'].lower()
+            artistname = t['artist']['name'].lower()
+            # xbmc.log(str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
+            # Put artists and tracks into the associative array
+            if artistname in artists:
+                artists[artistname].append(trackname)
+            else:
+                artists[artistname] = [trackname]
+
+    return artists
+
+
+def findTrack(artistname, trackname):
+    # Find the song
+    req = {
+        "jsonrpc": "2.0",
+        "method": "AudioLibrary.GetSongs",
+        "id": "libSongs",
+        "params": {
+            "properties": ["artist", "duration", "album", "title", "file", "thumbnail", "fanart"],
+            "limits": {"start": 0, "end": 1000},
+            "sort": {"order": "ascending", "method": "track", "ignorearticle": True},
+            "filter": {"and": [
+                {"field": "artist", "operator": "is", "value": artistname.encode('utf-8')},
+                {"field": "title", "operator": "is", "value": trackname.encode('utf-8')}
+            ]}
+        }
+    }
+    rpcresp = xbmc.executeJSONRPC(json.dumps(req))
+    # xbmc.log(str(rpcresp))
+    rpcresp = json.loads(rpcresp)
+    found = 0 < int(rpcresp['result']['limits']['end'])
+    if found:
+        #strInd = '+++ '
+        #xbmc.log(str(rpcresp))
+        return rpcresp['result']['songs'][0]
+    else:
+        #strInd = '    '
+        xbmc.log('NOT found track ' + str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
+        return None
+    #xbmc.log(strInd + str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
+
+
+def findTracks(artistname, tracks):
+    ret = []
+    #req = {"jsonrpc": "2.0", "method": "JSONRPC.Version", "id": "1", "params": []}
+    # Find artists with name starts with ...
+    #chars0 = artistname[0].lower() + artistname[1].lower()
+    #chars1 = artistname[0].upper() + artistname[1].lower()
+    #chars2 = artistname[0].lower() + artistname[1].upper()
+    #chars3 = artistname[0].upper() + artistname[1].upper()
+    req = {
+        "jsonrpc": "2.0",
+        "method": "AudioLibrary.GetArtists",
+        "id": "libSongs",
+        "params": {
+            "limits": {"start": 0, "end": 1000},
+            "sort": {"order": "ascending", "method": "track", "ignorearticle": True},
+            "filter": {"or": [
+                {"field": "artist", "operator": "is", "value": artistname.encode('utf-8')}
+                #{"field": "artist", "operator": "startswith", "value": chars0.encode('utf-8')},
+                #{"field": "artist", "operator": "startswith", "value": chars1.encode('utf-8')},
+                #{"field": "artist", "operator": "startswith", "value": chars2.encode('utf-8')},
+                #{"field": "artist", "operator": "startswith", "value": chars3.encode('utf-8')},
+            ]}
+        }
+    }
+    # xbmc.log(json.dumps(req))
+    rpcresp = xbmc.executeJSONRPC(json.dumps(req))
+    # xbmc.log(str(rpcresp))
+    rpcresp = json.loads(rpcresp)
+
+    found = 0 < int(rpcresp['result']['limits']['end'])
+    if found:
+        found = False
+        for art in rpcresp['result']['artists']:
+            if art['artist'].strip().lower() == artistname:
+                #xbmc.log('Found artist: ' + str(artistname.encode('utf-8')))
+                found = True
+                for t in tracks:
+                    item = findTrack(artistname, t)
+                    if item is not None:
+                        ret.append(item)
+
+    if not found:
+        xbmc.log('NOT found artist: ' + str(artistname.encode('utf-8')))
+
+    return ret
+
+
+def generatePlaylist(username):
+    xbmc.log('Generating a playlist')
+    artists = loadAllLovedTracks(username)
+    totalTracks = 0
+    items = []
+    for i, a in enumerate(artists):
+        # xbmc.log(a)
+        totalTracks += len(artists[a])
+        items.extend(findTracks(a, artists[a]))
+
+    xbmc.log("Found " + str(len(items)) + " tracks from " + str(totalTracks))
+
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+    playlist.clear()
+    for i, item in enumerate(items):
+        xbmc.log(str(item))
+        image='DefaultFolder.png' #urllib.unquote(urlparse.urlparse(item['thumbnail']).netloc)
+        xbmc.log(str(image)) #.encode('utf-8')))
+        xlistitem = xbmcgui.ListItem(item['title'], iconImage=image, thumbnailImage=image)
+        #xlistitem.setInfo("video", {"Title": title})
+        playlist.add(item['file'], xlistitem)
+
+    return playlist
+
+
+class MyPlayer(xbmc.Player):
+
+    def __init__(self, *args):
+        xbmc.log('openlast: player created')
+        xbmc.Player.__init__(self)
+
+    def onPlayBackStarted(self):
+        xbmc.log('openlast: player playback started')
+        pass
+
+    def onPlayBackEnded(self):
+        xbmc.log('openlast: player playback ended')
+        pass
+
+    def onPlaybackStopped(self):
+        xbmc.log('openlast: player playback stopped')
+        pass
 
 xbmc.log(str(args))
 action = args.get('action', None)
@@ -110,87 +258,15 @@ elif folder[0] == 'lastfm':
         xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
 
     elif action[0] == 'lovedTracks':
-        url = build_url(lastfmApi, {'method': 'user.getlovedtracks', 'user': lastfmUser,
-                                    'format': 'json', 'api_key': lastfmApiKey, 'limit': 200})
-        xbmc.log(url)
-        reply = urllib.urlopen(url)
-        xbmc.log(str(reply))
-        resp = json.load(reply)
-        if "error" in resp:
-            raise Exception("Error! DATA: " + str(resp))
-        else:
-            xbmc.log(str(resp))
-
-        for a in resp['lovedtracks']['@attr']:
-            xbmc.log(str(a) + ': ' + resp['lovedtracks']['@attr'][str(a)])
-        for t in resp['lovedtracks']['track']:
-            # xbmc.log(json.dumps(t).encode('utf-8'))
-            trackname = t['name']
-            artistname = t['artist']['name']
-            # xbmc.log(str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
-            req = {"jsonrpc": "2.0", "method": "JSONRPC.Version", "id": "1", "params": []}
-
-            # Find artists with name starts with ...
-            chars0 = artistname[0].lower() + artistname[1].lower()
-            chars1 = artistname[0].upper() + artistname[1].lower()
-            chars2 = artistname[0].lower() + artistname[1].upper()
-            chars3 = artistname[0].upper() + artistname[1].upper()
-            req = {
-                "jsonrpc": "2.0",
-                "method": "AudioLibrary.GetArtists",
-                "id": "libSongs",
-                "params": {
-                    "limits": {"start": 0, "end": 1000},
-                    "sort": {"order": "ascending", "method": "track", "ignorearticle": True},
-                    "filter": {"or": [
-                        {"field": "artist", "operator": "startswith", "value": chars0.encode('utf-8')},
-                        {"field": "artist", "operator": "startswith", "value": chars1.encode('utf-8')},
-                        {"field": "artist", "operator": "startswith", "value": chars2.encode('utf-8')},
-                        {"field": "artist", "operator": "startswith", "value": chars3.encode('utf-8')},
-                    ]}
-                }
-            }
-            # xbmc.log(json.dumps(req))
-            rpcresp = xbmc.executeJSONRPC(json.dumps(req))
-            # xbmc.log(str(rpcresp))
-            rpcresp = json.loads(rpcresp)
-            found = 0 < int(rpcresp['result']['limits']['end'])
-            if found:
-                for art in rpcresp['result']['artists']:
-                    if art['artist'].strip().lower() == artistname.lower():
-                        # Found the artist
-                        # xbmc.log(str(art['artist'].encode('utf-8')))
-
-                        # Find the song
-                        req = {
-                            "jsonrpc": "2.0",
-                            "method": "AudioLibrary.GetSongs",
-                            "id": "libSongs",
-                            "params": {
-                                "properties": ["artist", "duration", "album", "title"],
-                                "limits": {"start": 0, "end": 1000},
-                                "sort": {"order": "ascending", "method": "track", "ignorearticle": True},
-                                "filter": {"and": [
-                                    {"field": "artist", "operator": "is", "value": art['artist'].encode('utf-8')},
-                                    {"field": "title", "operator": "is", "value": trackname.encode('utf-8')}
-                                ]}
-                            }
-                        }
-                        rpcresp2 = xbmc.executeJSONRPC(json.dumps(req))
-                        # xbmc.log(str(rpcresp2))
-                        rpcresp2 = json.loads(rpcresp2)
-                        found2 = 0 < int(rpcresp2['result']['limits']['end'])
-                        if found2:
-                            strInd = '+++ '
-                        else:
-                            strInd = '    '
-                        xbmc.log(strInd + str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
-
+        playlist = generatePlaylist(username)
+        xbmc.Player(xbmc.PLAYER_CORE_AUTO).play(playlist)
         #player = MyPlayer()
         # player.play()
 
         # while(not xbmc.abortRequested):
-        #    xbmc.sleep(100)
+        #   xbmc.sleep(100)
 
+        #xbmc.log('Abort requested')
 
 xbmcplugin.endOfDirectory(addon_handle)
+xbmc.log('openlast: end -----------------------------------------------------')
