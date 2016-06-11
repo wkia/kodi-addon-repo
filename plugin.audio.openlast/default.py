@@ -23,10 +23,16 @@ args = urlparse.parse_qs(sys.argv[2][1:])
 lastfmApi = 'http://ws.audioscrobbler.com/2.0/'
 lastfmApiKey = '47608ece2138b2edae9538f83f703457'  # TODO use Openlast key
 
-lastfmAddon = xbmcaddon.Addon('service.scrobbler.lastfm')
+lastfmAddon = None
+lastfmUser = ''
+try:
+    lastfmAddon = xbmcaddon.Addon('service.scrobbler.lastfm')
+    lastfmUser = lastfmAddon.getSetting('lastfmuser')
+except RuntimeError:
+    pass
+
 my_addon = xbmcaddon.Addon()
 # lastfmUser = my_addon.getSetting('lastfm_username')
-lastfmUser = lastfmAddon.getSetting('lastfmuser')
 
 xbmcplugin.setContent(addon_handle, 'audio')
 
@@ -107,7 +113,7 @@ def findTrack(artistname, trackname):
         return rpcresp['result']['songs'][0]
     else:
         #strInd = '    '
-        xbmc.log('NOT found track ' + str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
+        #xbmc.log('NOT found track ' + str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
         return None
     #xbmc.log(strInd + str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
 
@@ -154,7 +160,8 @@ def findTracks(artistname, tracks):
                         ret.append(item)
 
     if not found:
-        xbmc.log('NOT found artist: ' + str(artistname.encode('utf-8')))
+        #xbmc.log('NOT found artist: ' + str(artistname.encode('utf-8')))
+        pass
 
     return ret
 
@@ -174,9 +181,9 @@ def generatePlaylist(username):
     playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
     playlist.clear()
     for i, item in enumerate(items):
-        xbmc.log(str(item))
+        #xbmc.log(str(item))
         image='DefaultFolder.png' #urllib.unquote(urlparse.urlparse(item['thumbnail']).netloc)
-        xbmc.log(str(image)) #.encode('utf-8')))
+        #xbmc.log(str(image)) #.encode('utf-8')))
         xlistitem = xbmcgui.ListItem(item['title'], iconImage=image, thumbnailImage=image)
         #xlistitem.setInfo("video", {"Title": title})
         playlist.add(item['file'], xlistitem)
@@ -261,7 +268,7 @@ elif folder[0] == 'lastfm':
         playlist = generatePlaylist(username)
         xbmc.Player(xbmc.PLAYER_CORE_AUTO).play(playlist)
         #player = MyPlayer()
-        # player.play()
+        #player.play(playlist)
 
         # while(not xbmc.abortRequested):
         #   xbmc.sleep(100)
