@@ -32,7 +32,7 @@ SESSION = 'openlast'
 log('start -----------------------------------------------------', SESSION)
 log('script version %s started' % ADDONVERSION, SESSION)
 
-xbmc.log(str(sys.argv))
+# xbmc.log(str(sys.argv))
 addonUrl = sys.argv[0]
 addon_handle = int(sys.argv[1])
 args = urlparse.parse_qs(sys.argv[2][1:])
@@ -69,14 +69,14 @@ def loadLovedTracks(username, page):
         raise Exception("Error! DATA: " + str(resp))
     else:
         # xbmc.log(str(resp))
-        xbmc.log('Successfully loaded loved tracks, page:' + str(page))
+        log('Successfully loaded loved tracks, page:' + str(page), SESSION)
 
     return resp
 
 
 def loadAllLovedTracks(username):
     xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Loading loved tracks..."))
-    xbmc.log('Loading loved tracks')
+    log('Loading loved tracks', SESSION)
     loaded = False
     page = 1
     artists = {}
@@ -107,6 +107,10 @@ def loadAllLovedTracks(username):
 
 def findTrack(artistname, trackname):
     # Find the song
+    chars0 = trackname[0].lower() + trackname[1].lower()
+    chars1 = trackname[0].upper() + trackname[1].lower()
+    chars2 = trackname[0].lower() + trackname[1].upper()
+    chars3 = trackname[0].upper() + trackname[1].upper()
     req = {
         "jsonrpc": "2.0",
         "method": "AudioLibrary.GetSongs",
@@ -117,7 +121,13 @@ def findTrack(artistname, trackname):
             "sort": {"order": "ascending", "method": "track", "ignorearticle": True},
             "filter": {"and": [
                 {"field": "artist", "operator": "is", "value": artistname.encode('utf-8')},
-                {"field": "title", "operator": "is", "value": trackname.encode('utf-8')}
+                {"or": [
+                    #{"field": "title", "operator": "is", "value": trackname.encode('utf-8')}
+                    {"field": "title", "operator": "startswith", "value": chars0.encode('utf-8')},
+                    {"field": "title", "operator": "startswith", "value": chars1.encode('utf-8')},
+                    {"field": "title", "operator": "startswith", "value": chars2.encode('utf-8')},
+                    {"field": "title", "operator": "startswith", "value": chars3.encode('utf-8')},
+                ]}
             ]}
         }
     }
@@ -138,12 +148,11 @@ def findTrack(artistname, trackname):
 
 def findTracks(artistname, tracks):
     ret = []
-    #req = {"jsonrpc": "2.0", "method": "JSONRPC.Version", "id": "1", "params": []}
     # Find artists with name starts with ...
-    #chars0 = artistname[0].lower() + artistname[1].lower()
-    #chars1 = artistname[0].upper() + artistname[1].lower()
-    #chars2 = artistname[0].lower() + artistname[1].upper()
-    #chars3 = artistname[0].upper() + artistname[1].upper()
+    chars0 = artistname[0].lower() + artistname[1].lower()
+    chars1 = artistname[0].upper() + artistname[1].lower()
+    chars2 = artistname[0].lower() + artistname[1].upper()
+    chars3 = artistname[0].upper() + artistname[1].upper()
     req = {
         "jsonrpc": "2.0",
         "method": "AudioLibrary.GetArtists",
@@ -153,11 +162,11 @@ def findTracks(artistname, tracks):
             "limits": {"start": 0, "end": 1000},
             "sort": {"order": "ascending", "method": "track", "ignorearticle": True},
             "filter": {"or": [
-                {"field": "artist", "operator": "is", "value": artistname.encode('utf-8')}
-                #{"field": "artist", "operator": "startswith", "value": chars0.encode('utf-8')},
-                #{"field": "artist", "operator": "startswith", "value": chars1.encode('utf-8')},
-                #{"field": "artist", "operator": "startswith", "value": chars2.encode('utf-8')},
-                #{"field": "artist", "operator": "startswith", "value": chars3.encode('utf-8')},
+                #{"field": "artist", "operator": "is", "value": artistname.encode('utf-8')}
+                {"field": "artist", "operator": "startswith", "value": chars0.encode('utf-8')},
+                {"field": "artist", "operator": "startswith", "value": chars1.encode('utf-8')},
+                {"field": "artist", "operator": "startswith", "value": chars2.encode('utf-8')},
+                {"field": "artist", "operator": "startswith", "value": chars3.encode('utf-8')},
             ]}
         }
     }
@@ -176,18 +185,18 @@ def findTracks(artistname, tracks):
 
     if found:
         found = False
-        for art in rpcresp['result']['artists']:
-            if art['artist'].strip().lower() == artistname:
+        for a in rpcresp['result']['artists']:
+            if a['artist'].strip().lower() == artistname:
                 #xbmc.log('Found artist: ' + str(artistname.encode('utf-8')))
                 found = True
                 # xbmc.log(str(rpcresp['result']))
                 for t in tracks:
-                    item = findTrack(artistname, t)
+                    item = findTrack(a['artist'], t)
                     if item is not None:
                         ret.append(item)
 
     if not found:
-        #xbmc.log('NOT found artist: ' + str(artistname.encode('utf-8')))
+        log('NOT found artist: ' + str(artistname.encode('utf-8')), SESSION)
         pass
 
     return ret
@@ -230,16 +239,16 @@ class MyPlayer(xbmc.Player):
         xbmc.Player.__init__(self)
 
     def onPlayBackStarted(self):
-        log('onPlayBackStarted', SESSION)
+        #log('onPlayBackStarted', SESSION)
         # tags are not available instantly and we don't what to announce right
         # away as the user might be skipping through the songs
-        xbmc.sleep(500)
+        #xbmc.sleep(500)
         # get tags
-        tags = self._get_tags()
+        #tags = self._get_tags()
         pass
 
     def onPlayBackEnded(self):
-        log('onPlayBackEnded', SESSION)
+        #log('onPlayBackEnded', SESSION)
         pass
 
     def onPlayBackStopped(self):
@@ -273,7 +282,7 @@ class MyPlayer(xbmc.Player):
         log('fan art: ' + str(xbmc.getInfoLabel('MusicPlayer.Property(Fanart_Image)')), SESSION)
 
 
-xbmc.log(str(args))
+# xbmc.log(str(args))
 action = args.get('action', None)
 folder = args.get('folder', None)
 
@@ -284,7 +293,7 @@ if folder is None:
 
     if '' != lastfmUser:
         url = build_url(addonUrl, {'folder': 'lastfm', 'username': lastfmUser})
-        xbmc.log(url)
+        # xbmc.log(url)
         li = xbmcgui.ListItem('Last.FM radio (' + lastfmUser + ')', iconImage='DefaultFolder.png')
         xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
 
@@ -317,7 +326,8 @@ elif folder[0] == 'lastfm':
         if "error" in resp:
             raise Exception("Error! DATA: " + str(resp))
         else:
-            xbmc.log(str(resp))
+            # xbmc.log(str(resp))
+            pass
 
         img = resp['user']['image'][2]['#text']
         if '' == img:
