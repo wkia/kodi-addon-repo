@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.audio.openlast" name="openlast" version="0.1.0" provider-name="wkia">
+<addon id="plugin.audio.openlast" name="openlast" version="0.1.1" provider-name="wkia">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.simplejson" version="3.3.0"/>
@@ -13,7 +13,7 @@
         <license>GPL 2.0</license>
         <!--forum>http://forum.kodi.tv/showthread.php?tid=223813</forum-->
         <website>http://openlast.wkia.net.ru</website>
-        <!--source>https://github.com/Bitcrusher/Rockradio-com-XBMC-plugin</source-->
+        <source>https://github.com/wkia/kodi-addon-repo</source>
         <summary lang="en">openlast radio</summary>
         <description lang="en">
             openlast radio description

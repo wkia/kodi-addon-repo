@@ -1,3 +1,6 @@
+0.1.1
+    Improved searching local songs
+
 0.1.0
     Initial version:
       - loads loved tracks from Last.fm, 
