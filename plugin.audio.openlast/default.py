@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import sys
 import urllib
 import urlparse
@@ -10,10 +12,24 @@ if sys.version_info < (2, 7):
 else:
     import json
 
-xbmc.log('openlast: start -----------------------------------------------------')
-
+__addon__ = xbmcaddon.Addon()
+__addonid__ = __addon__.getAddonInfo('id')
 #__settings__ = xbmcaddon.Addon(id='xbmc-vk.svoka.com')
 #__language__ = __settings__.getLocalizedString
+#LANGUAGE     = __addon__.getLocalizedString
+ADDONVERSION = __addon__.getAddonInfo('version')
+CWD = __addon__.getAddonInfo('path').decode("utf-8")
+
+
+def log(txt, session):
+    if isinstance(txt, str):
+        txt = txt.decode("utf-8")
+    message = u'%s - %s: %s' % (__addonid__, session, txt)
+    xbmc.log(msg=message.encode("utf-8"))
+
+SESSION = 'openlast'
+
+log('start -----------------------------------------------------', SESSION)
 
 xbmc.log(str(sys.argv))
 addonUrl = sys.argv[0]
@@ -109,7 +125,7 @@ def findTrack(artistname, trackname):
     found = 0 < int(rpcresp['result']['limits']['end'])
     if found:
         #strInd = '+++ '
-        #xbmc.log(str(rpcresp))
+        # xbmc.log(str(rpcresp))
         return rpcresp['result']['songs'][0]
     else:
         #strInd = '    '
@@ -131,6 +147,7 @@ def findTracks(artistname, tracks):
         "method": "AudioLibrary.GetArtists",
         "id": "libSongs",
         "params": {
+            #"properties": ["thumbnail", "fanart"],
             "limits": {"start": 0, "end": 1000},
             "sort": {"order": "ascending", "method": "track", "ignorearticle": True},
             "filter": {"or": [
@@ -147,13 +164,21 @@ def findTracks(artistname, tracks):
     # xbmc.log(str(rpcresp))
     rpcresp = json.loads(rpcresp)
 
-    found = 0 < int(rpcresp['result']['limits']['end'])
+    found = False
+    if 'error' in rpcresp:
+        log(str(rpcresp), SESSION)
+        pass
+    elif 'result' in rpcresp:
+        found = 0 < int(rpcresp['result']['limits']['end'])
+        pass
+
     if found:
         found = False
         for art in rpcresp['result']['artists']:
             if art['artist'].strip().lower() == artistname:
                 #xbmc.log('Found artist: ' + str(artistname.encode('utf-8')))
                 found = True
+                # xbmc.log(str(rpcresp['result']))
                 for t in tracks:
                     item = findTrack(artistname, t)
                     if item is not None:
@@ -167,6 +192,7 @@ def findTracks(artistname, tracks):
 
 
 def generatePlaylist(username):
+    xbmc.executebuiltin('Notification(%s,%s,%i)' % ("Generating playlist", "...generating playlist...", 7000))
     xbmc.log('Generating a playlist')
     artists = loadAllLovedTracks(username)
     totalTracks = 0
@@ -181,11 +207,12 @@ def generatePlaylist(username):
     playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
     playlist.clear()
     for i, item in enumerate(items):
-        #xbmc.log(str(item))
-        image='DefaultFolder.png' #urllib.unquote(urlparse.urlparse(item['thumbnail']).netloc)
-        #xbmc.log(str(image)) #.encode('utf-8')))
-        xlistitem = xbmcgui.ListItem(item['title'], iconImage=image, thumbnailImage=image)
-        #xlistitem.setInfo("video", {"Title": title})
+        # xbmc.log(str(item))
+        thumb = item['thumbnail']
+        # xbmc.log(str(thumb).encode('utf-8'))
+        xlistitem = xbmcgui.ListItem(item['title'])
+        xlistitem.setInfo("music", infoLabels={"Title": item['title']})
+        xlistitem.setArt({'thumb': thumb})  # , 'fanart': thumb})
         playlist.add(item['file'], xlistitem)
 
     return playlist
@@ -194,20 +221,53 @@ def generatePlaylist(username):
 class MyPlayer(xbmc.Player):
 
     def __init__(self, *args):
-        xbmc.log('openlast: player created')
+        log('init player class', SESSION)
+        self.stopped = False
         xbmc.Player.__init__(self)
 
     def onPlayBackStarted(self):
-        xbmc.log('openlast: player playback started')
+        log('onPlayBackStarted', SESSION)
+        # tags are not available instantly and we don't what to announce right
+        # away as the user might be skipping through the songs
+        xbmc.sleep(500)
+        # get tags
+        tags = self._get_tags()
         pass
 
     def onPlayBackEnded(self):
-        xbmc.log('openlast: player playback ended')
+        log('onPlayBackEnded', SESSION)
         pass
 
-    def onPlaybackStopped(self):
-        xbmc.log('openlast: player playback stopped')
+    def onPlayBackStopped(self):
+        log('onPlayBackStopped', SESSION)
+        self.stopped = True
         pass
+
+    def _get_tags(self):
+        # get track tags
+        artist = self.getMusicInfoTag().getArtist().decode("utf-8")
+        album = self.getMusicInfoTag().getAlbum().decode("utf-8")
+        title = self.getMusicInfoTag().getTitle().decode("utf-8")
+        duration = str(self.getMusicInfoTag().getDuration())
+        # get duration from xbmc.Player if the MusicInfoTag duration is invalid
+        if int(duration) <= 0:
+            duration = str(int(self.getTotalTime()))
+        track = str(self.getMusicInfoTag().getTrack())
+        path = self.getPlayingFile().decode("utf-8")
+        thumb = xbmc.getCacheThumbName(path)
+        log('artist: ' + artist, SESSION)
+        log('album: ' + album, SESSION)
+        log('title: ' + title, SESSION)
+        log('track: ' + str(track), SESSION)
+        log('duration: ' + str(duration), SESSION)
+        log('path: ' + path, SESSION)
+        #log('local path: ' + user, SESSION)
+        log('thumb: ' + thumb, SESSION)
+
+        log('cover art: ' + str(xbmc.getInfoLabel('MusicPlayer.Cover')), SESSION)
+        log('thumb art: ' + str(xbmc.getInfoLabel('Player.Art(thumb)')), SESSION)
+        log('fan art: ' + str(xbmc.getInfoLabel('MusicPlayer.Property(Fanart_Image)')), SESSION)
+
 
 xbmc.log(str(args))
 action = args.get('action', None)
@@ -246,8 +306,8 @@ elif folder[0] == 'lastfm':
             raise Exception("Login input was cancelled.")
 
     if action is None:
-        url = build_url(lastfmApi, {
-                        'method': 'user.getInfo', 'user': username, 'format': 'json', 'api_key': lastfmApiKey})
+        url = build_url(lastfmApi, {'method': 'user.getInfo', 'user': username,
+                                    'format': 'json', 'api_key': lastfmApiKey})
         reply = urllib.urlopen(url)
         resp = json.load(reply)
         if "error" in resp:
@@ -266,14 +326,18 @@ elif folder[0] == 'lastfm':
 
     elif action[0] == 'lovedTracks':
         playlist = generatePlaylist(username)
-        xbmc.Player(xbmc.PLAYER_CORE_AUTO).play(playlist)
-        #player = MyPlayer()
-        #player.play(playlist)
+        # xbmc.Player(xbmc.PLAYER_CORE_AUTO).play(playlist)
+        # if ( __name__ == "__main__" ):
+        log('script version %s started' % ADDONVERSION, SESSION)
+        # Main()
+        player = MyPlayer()
+        player.play(playlist)
 
-        # while(not xbmc.abortRequested):
-        #   xbmc.sleep(100)
+        while(not xbmc.abortRequested and not player.stopped):
+            xbmc.sleep(500)
 
-        #xbmc.log('Abort requested')
+        log('Abort requested', SESSION)
+        log('script stopped', SESSION)
 
 xbmcplugin.endOfDirectory(addon_handle)
-xbmc.log('openlast: end -----------------------------------------------------')
+log('end -----------------------------------------------------', SESSION)
