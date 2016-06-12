@@ -30,6 +30,7 @@ def log(txt, session):
 SESSION = 'openlast'
 
 log('start -----------------------------------------------------', SESSION)
+log('script version %s started' % ADDONVERSION, SESSION)
 
 xbmc.log(str(sys.argv))
 addonUrl = sys.argv[0]
@@ -74,6 +75,7 @@ def loadLovedTracks(username, page):
 
 
 def loadAllLovedTracks(username):
+    xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Loading loved tracks..."))
     xbmc.log('Loading loved tracks')
     loaded = False
     page = 1
@@ -192,9 +194,9 @@ def findTracks(artistname, tracks):
 
 
 def generatePlaylist(username):
-    xbmc.executebuiltin('Notification(%s,%s,%i)' % ("Generating playlist", "...generating playlist...", 7000))
-    xbmc.log('Generating a playlist')
     artists = loadAllLovedTracks(username)
+    xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Finding local songs..."))
+    log('Finding local songs...', SESSION)
     totalTracks = 0
     items = []
     for i, a in enumerate(artists):
@@ -202,8 +204,10 @@ def generatePlaylist(username):
         totalTracks += len(artists[a])
         items.extend(findTracks(a, artists[a]))
 
-    xbmc.log("Found " + str(len(items)) + " tracks from " + str(totalTracks))
+    log("Found " + str(len(items)) + " tracks from " + str(totalTracks), SESSION)
 
+    xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Generating playlist..."))
+    log('Generating a playlist', SESSION)
     playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
     playlist.clear()
     for i, item in enumerate(items):
@@ -326,18 +330,14 @@ elif folder[0] == 'lastfm':
 
     elif action[0] == 'lovedTracks':
         playlist = generatePlaylist(username)
-        # xbmc.Player(xbmc.PLAYER_CORE_AUTO).play(playlist)
-        # if ( __name__ == "__main__" ):
-        log('script version %s started' % ADDONVERSION, SESSION)
-        # Main()
+        playlist.shuffle()
         player = MyPlayer()
         player.play(playlist)
 
         while(not xbmc.abortRequested and not player.stopped):
             xbmc.sleep(500)
 
-        log('Abort requested', SESSION)
-        log('script stopped', SESSION)
+        log('playback stopped', SESSION)
 
 xbmcplugin.endOfDirectory(addon_handle)
 log('end -----------------------------------------------------', SESSION)
