@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-<addon id="plugin.audio.openlast" name="openlast" version="0.1.1" provider-name="wkia">
+<addon id="plugin.audio.openlast" name="Openlast" version="0.1.1" provider-name="wkia">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.simplejson" version="3.3.0"/>
@@ -8,7 +8,7 @@
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>audio</provides>
     </extension>
-    <extension point="xbmc.addon.metadata">
+    <extension point="xbmc.addon.metadata" name="openlast.metadata">
         <platform>all</platform>
         <language>en</language>
         <license>GPL 2.0</license>
