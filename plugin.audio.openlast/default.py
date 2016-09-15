@@ -122,7 +122,7 @@ def findTrack(artistname, trackname):
             "filter": {"and": [
                 {"field": "artist", "operator": "is", "value": artistname.encode('utf-8')},
                 {"or": [
-                    #{"field": "title", "operator": "is", "value": trackname.encode('utf-8')}
+                    #{"field": "title", "operator": "is", "value": trackname.lower().encode('utf-8')}
                     {"field": "title", "operator": "startswith", "value": chars0.encode('utf-8')},
                     {"field": "title", "operator": "startswith", "value": chars1.encode('utf-8')},
                     {"field": "title", "operator": "startswith", "value": chars2.encode('utf-8')},
@@ -131,19 +131,29 @@ def findTrack(artistname, trackname):
             ]}
         }
     }
+
     rpcresp = xbmc.executeJSONRPC(json.dumps(req))
     # xbmc.log(str(rpcresp))
     rpcresp = json.loads(rpcresp)
     found = 0 < int(rpcresp['result']['limits']['end'])
+    ret = None
+    #strInd = '    '
     if found:
-        #strInd = '+++ '
         # xbmc.log(str(rpcresp))
-        return rpcresp['result']['songs'][0]
-    else:
-        #strInd = '    '
+        for s in rpcresp['result']['songs']:
+            if trackname.lower() == s['title'].lower():
+                ret = s
+                break
+        #if artistname.lower() <> ret['artist'][0].lower() or trackname.lower() <> ret['title'].lower():
+        #if ret is not None:
+        #    strInd = '+++ '
+        #    xbmc.log(strInd + str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
+        #    xbmc.log('    ' + str(ret['artist'][0].encode('utf-8')) + " -- " + str(ret['title'].encode('utf-8')))
+    #else:
         #xbmc.log('NOT found track ' + str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
-        return None
+
     #xbmc.log(strInd + str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
+    return ret
 
 
 def findTracks(artistname, tracks):
@@ -176,6 +186,7 @@ def findTracks(artistname, tracks):
     rpcresp = json.loads(rpcresp)
 
     found = False
+    foundTrack = False
     if 'error' in rpcresp:
         log(str(rpcresp), SESSION)
         pass
@@ -193,10 +204,17 @@ def findTracks(artistname, tracks):
                 for t in tracks:
                     item = findTrack(a['artist'], t)
                     if item is not None:
+                        foundTrack = True
                         ret.append(item)
 
+    if foundTrack:
+        #log(len(ret), SESSION)
+        a = ret[len(ret) - 1]['artist'][0]
+        if artistname.lower() <> a.lower():
+            log("WARNING: artist name has leading spaces: '" + str(a.encode('utf-8')) + "'", SESSION)
+
     if not found:
-        log('NOT found artist: ' + str(artistname.encode('utf-8')), SESSION)
+        log('NOT found artist: "' + str(artistname.encode('utf-8')) + '"', SESSION)
         pass
 
     return ret
@@ -239,7 +257,7 @@ class MyPlayer(xbmc.Player):
         xbmc.Player.__init__(self)
 
     def onPlayBackStarted(self):
-        #log('onPlayBackStarted', SESSION)
+        log('onPlayBackStarted', SESSION)
         # tags are not available instantly and we don't what to announce right
         # away as the user might be skipping through the songs
         #xbmc.sleep(500)
@@ -248,7 +266,7 @@ class MyPlayer(xbmc.Player):
         pass
 
     def onPlayBackEnded(self):
-        #log('onPlayBackEnded', SESSION)
+        log('onPlayBackEnded', SESSION)
         pass
 
     def onPlayBackStopped(self):
