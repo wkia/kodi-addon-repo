@@ -10,11 +10,11 @@ class History:
         pass
 
     def addEntry(self, artist, track):
-        self.artists.append(artist)
+        self.artists.append(artist.lower())
         if len(self.artists) > self.maxArtistCount:
             self.artists.pop(0)
 
-        self.tracks.append(track)
+        self.tracks.append(track.lower())
         if len(self.tracks) > self.maxTrackCount:
             self.tracks.pop(0)
 
@@ -22,14 +22,14 @@ class History:
 
     def isTrackRecentlyPlayed(self, track):
         try:
-            self.tracks.index(track.lower)
+            self.tracks.index(track.lower())
         except ValueError:
             return False
         return True
 
     def isArtistRecentlyPlayed(self, artist):
         try:
-            self.artists.index(artist)
+            self.artists.index(artist.lower())
         except ValueError:
             return False
         return True
