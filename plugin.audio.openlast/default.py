@@ -7,25 +7,21 @@ import xbmcaddon
 import xbmcgui
 import xbmcplugin
 
+from history import History
+from logging import log
+
 if sys.version_info < (2, 7):
     import simplejson as json
 else:
     import json
 
 __addon__ = xbmcaddon.Addon()
-__addonid__ = __addon__.getAddonInfo('id')
+#__addonid__ = __addon__.getAddonInfo('id')
 #__settings__ = xbmcaddon.Addon(id='xbmc-vk.svoka.com')
 #__language__ = __settings__.getLocalizedString
 #LANGUAGE     = __addon__.getLocalizedString
 ADDONVERSION = __addon__.getAddonInfo('version')
-CWD = __addon__.getAddonInfo('path').decode("utf-8")
-
-
-def log(txt, session):
-    if isinstance(txt, str):
-        txt = txt.decode("utf-8")
-    message = u'%s - %s: %s' % (__addonid__, session, txt)
-    xbmc.log(msg=message.encode("utf-8"))
+#CWD = __addon__.getAddonInfo('path').decode("utf-8")
 
 SESSION = 'openlast'
 
@@ -253,8 +249,10 @@ class MyPlayer(xbmc.Player):
 
     def __init__(self, *args):
         log('init player class', SESSION)
+        self.history = History(10, 75)
         self.stopped = False
         xbmc.Player.__init__(self)
+        pass
 
     def onPlayBackStarted(self):
         log('onPlayBackStarted', SESSION)
