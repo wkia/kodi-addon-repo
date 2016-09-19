@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import urllib
 import urlparse
 import xbmcaddon
 import xbmcgui
 import xbmcplugin
+
+if sys.version_info < (2, 7):
+    import simplejson as json
+else:
+    import json
 
 from logging import log
 from player import OpenlastPlayer
@@ -33,8 +39,16 @@ args = urlparse.parse_qs(sys.argv[2][1:])
 
 xbmcplugin.setContent(addon_handle, 'audio')
 
+lastfmApi = 'http://ws.audioscrobbler.com/2.0/'
+lastfmApiKey = '47608ece2138b2edae9538f83f703457'  # TODO use Openlast key
 
-
+lastfmAddon = None
+lastfmUser = ''
+try:
+    lastfmAddon = xbmcaddon.Addon('service.scrobbler.lastfm')
+    lastfmUser = lastfmAddon.getSetting('lastfmuser')
+except RuntimeError:
+    pass
 
 xbmc.log(str(args))
 action = args.get('action', None)
