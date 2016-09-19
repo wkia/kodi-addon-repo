@@ -21,6 +21,8 @@ SESSION = 'openlast'
 lastfmApi = 'http://ws.audioscrobbler.com/2.0/'
 lastfmApiKey = '47608ece2138b2edae9538f83f703457'  # TODO use Openlast key
 
+MAX_ARTIST_COUNT = 10
+
 class OpenlastPlayer(xbmc.Player):
 
     def __init__(self):
@@ -36,7 +38,9 @@ class OpenlastPlayer(xbmc.Player):
         log('initializing player class, username=%s' % username, SESSION)
         self.username = username
         self.lovedTracks = self.loadAllLovedTracks(self.username)
-        self.history = History(10, 75)
+        artistCount = len(self.lovedTracks.keys())
+        trackCount = len(self.lovedTracks.values())
+        self.history = History(artistCount if artistCount < MAX_ARTIST_COUNT else MAX_ARTIST_COUNT, trackCount * 2 / 3)
         random.seed()
         pass
 
@@ -50,43 +54,26 @@ class OpenlastPlayer(xbmc.Player):
         xbmc.Player.play(self, playlist)
         pass
 
-    def playnext(self):
-        log('playnext', SESSION)
-        pass
-
     def onPlayBackStarted(self):
         log('onPlayBackStarted', SESSION)
         # tags are not available instantly and we don't what to announce right
         # away as the user might be skipping through the songs
         xbmc.sleep(500)
+
         # get tags
         entry = self._get_tags()
         self.history.addEntry(entry[0], entry[1])
-        pass
 
-    def onPlayBackEnded(self):
-        log('onPlayBackEnded', SESSION)
+        # choose the next track
+        playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+        if playlist.getposition() + 1 == playlist.size():
+            nextItem = self.generateNextTrack()
+            playlist.add(nextItem[0], nextItem[1])
         pass
 
     def onPlayBackStopped(self):
         log('onPlayBackStopped', SESSION)
         self.stopped = True
-        pass
-
-    def onPlayBackSeek(self, time, seekOffset):
-        log('onPlayBackSeek', SESSION)
-        pass
-
-    def onPlayBackSeekChapter(self, chapter):
-        log('onPlayBackSeekChapter: ' + str(chapter), SESSION)
-        pass
-
-    def onQueueNextItem(self):
-        log('onQueueNextItem', SESSION)
-        nextItem = self.generateNextTrack()
-        playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-        playlist.add(nextItem[0], nextItem[1])
-        #xbmc.Player.play(self, playlist)
         pass
 
     def _get_tags(self):
@@ -102,17 +89,17 @@ class OpenlastPlayer(xbmc.Player):
         path = self.getPlayingFile().decode("utf-8")
         thumb = xbmc.getCacheThumbName(path)
         log('artist: ' + artist, SESSION)
-        log('album: ' + album, SESSION)
         log('title: ' + title, SESSION)
-        log('track: ' + str(track), SESSION)
-        log('duration: ' + str(duration), SESSION)
-        log('path: ' + path, SESSION)
+        log('album: ' + album, SESSION)
+        #log('track: ' + str(track), SESSION)
+        #log('duration: ' + str(duration), SESSION)
+        #log('path: ' + path, SESSION)
         #log('local path: ' + user, SESSION)
-        log('thumb: ' + thumb, SESSION)
+        #log('thumb: ' + thumb, SESSION)
 
-        log('cover art: ' + str(xbmc.getInfoLabel('MusicPlayer.Cover')), SESSION)
-        log('thumb art: ' + str(xbmc.getInfoLabel('Player.Art(thumb)')), SESSION)
-        log('fan art: ' + str(xbmc.getInfoLabel('MusicPlayer.Property(Fanart_Image)')), SESSION)
+        #log('cover art: ' + str(xbmc.getInfoLabel('MusicPlayer.Cover')), SESSION)
+        #log('thumb art: ' + str(xbmc.getInfoLabel('Player.Art(thumb)')), SESSION)
+        #log('fan art: ' + str(xbmc.getInfoLabel('MusicPlayer.Property(Fanart_Image)')), SESSION)
 
         return [artist, title]
 
@@ -309,7 +296,7 @@ class OpenlastPlayer(xbmc.Player):
     def generateNextTrack(self):
         log('Generating the next track', SESSION)
         found = False
-        res = None
+        item = None
         while not found:
             # Choose an artist
             a = random.randint(0, len(self.lovedTracks) - 1)
@@ -317,24 +304,27 @@ class OpenlastPlayer(xbmc.Player):
             artists = self.lovedTracks.keys()
             artist = artists[a]
             #log('Generated artist "%s"' % artist, SESSION)
+            if self.history.isArtistRecentlyPlayed(artist):
+                continue
 
             tryCount = 3
             while not found and 0 < tryCount:
                 # Choose a track
                 t = random.randint(0, len(self.lovedTracks[artist]) - 1)
                 #log('Generated track number %i' % t, SESSION)
-                res = self.findTrack(artist, self.lovedTracks[artist][t])
-                if res is None:
-                    # Try to choose another track of the same artist
+                res = self.findTracks(artist, [self.lovedTracks[artist][t]])
+                if len(res) == 0:
+                    # Track not found. Try to choose another track of the same artist
                     log('Track not found: %s - "%s"' % (artist, self.lovedTracks[artist][t]), SESSION)
                     tryCount = tryCount - 1
-                else:
-                    log('The next track is: %s - "%s"' % (res['artist'][0], res['title']), SESSION)
+                elif not self.history.isTrackRecentlyPlayed(self.lovedTracks[artist][t]):
+                    item = res[0]
+                    log('The next track is: %s - "%s"' % (item['artist'][0], item['title']), SESSION)
                     found = True
 
-        thumb = res['thumbnail']
-        xlistitem = xbmcgui.ListItem(res['title'])
-        xlistitem.setInfo("music", infoLabels={"Title": res['title']})
+        thumb = item['thumbnail']
+        xlistitem = xbmcgui.ListItem(item['title'])
+        xlistitem.setInfo("music", infoLabels={"Title": item['title']})
         xlistitem.setArt({'thumb': thumb})  # , 'fanart': thumb})
 
-        return [res['file'], xlistitem]
+        return [item['file'], xlistitem]
