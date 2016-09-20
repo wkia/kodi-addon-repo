@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import random
+import sys
 import urllib
 import xbmc
 import xbmcaddon
@@ -24,6 +24,8 @@ lastfmApiKey = '47608ece2138b2edae9538f83f703457'  # TODO use Openlast key
 MAX_ARTIST_COUNT = 10
 
 class OpenlastPlayer(xbmc.Player):
+
+    WINDOW = 12006 # music visualization
 
     def __init__(self):
         log('creating player class', SESSION)
@@ -52,6 +54,7 @@ class OpenlastPlayer(xbmc.Player):
         playlist.clear()
         playlist.add(nextItem[0], nextItem[1])
         xbmc.Player.play(self, playlist)
+        xbmc.executebuiltin("ActivateWindow(%d)" % (self.WINDOW,))
         pass
 
     def onPlayBackStarted(self):
