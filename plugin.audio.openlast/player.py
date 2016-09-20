@@ -30,6 +30,7 @@ class OpenlastPlayer(xbmc.Player):
     def __init__(self):
         log('creating player class', SESSION)
         xbmc.Player.__init__(self)
+        xbmc.Player().stop()
         self.history = None
         self.lovedTracks = None
         self.stopped = True
@@ -310,16 +311,31 @@ class OpenlastPlayer(xbmc.Player):
             if self.history.isArtistRecentlyPlayed(artist):
                 continue
 
-            tryCount = 3
+            tryCount = 5
             while not found and 0 < tryCount:
                 # Choose a track
                 t = random.randint(0, len(self.lovedTracks[artist]) - 1)
                 #log('Generated track number %i' % t, SESSION)
                 res = self.findTracks(artist, [self.lovedTracks[artist][t]])
                 if len(res) == 0:
-                    # Track not found. Try to choose another track of the same artist
-                    log('Track not found: %s - "%s"' % (artist, self.lovedTracks[artist][t]), SESSION)
+                    # Track not found
+                    log('Track not found: %s - "%s", removing...' % (artist, self.lovedTracks[artist][t]), SESSION)
+                    # Remove non-existent track from the list
+                    del self.lovedTracks[artist][t]
+                    if 0 == len(self.lovedTracks[artist]):
+                        log('Artist "%s" has no more tracks, removing...' % artist, SESSION)
+                        del self.lovedTracks[artist]
+                        # Go to the another artist
+                        tryCount = 0
+
+                    # Rescale the history
+                    artistCount = len(self.lovedTracks.keys())
+                    trackCount = len(self.lovedTracks.values())
+                    self.history.rescale(artistCount if artistCount < MAX_ARTIST_COUNT else MAX_ARTIST_COUNT, trackCount * 2 / 3)
+
+                    # Try to choose another track of the same artist
                     tryCount = tryCount - 1
+
                 elif not self.history.isTrackRecentlyPlayed(self.lovedTracks[artist][t]):
                     item = res[0]
                     log('The next track is: %s - "%s"' % (item['artist'][0], item['title']), SESSION)

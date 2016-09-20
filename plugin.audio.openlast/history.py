@@ -9,7 +9,7 @@ class History:
         self.tracks = []
         pass
 
-    def _rescale(self, maxArtistCount, maxTrackCount):
+    def rescale(self, maxArtistCount, maxTrackCount):
         self.maxArtistCount = maxArtistCount
         self.maxTrackCount = maxTrackCount
         self._clean()
