@@ -30,30 +30,52 @@ class OpenlastPlayer(xbmc.Player):
     def __init__(self):
         log('creating player class', SESSION)
         xbmc.Player.__init__(self)
-        xbmc.Player().stop()
         self.history = None
         self.lovedTracks = None
         self.stopped = True
         self.username = ''
+        self.dlgProgress = None
         pass
 
     def init(self, username):
         log('initializing player class, username=%s' % username, SESSION)
+        self.dlgProgress = xbmcgui.DialogProgress()
+        self.dlgProgress.create(SESSION, 'Initializing addon...')
+        self.dlgProgress.update(0)
+
         self.username = username
         self.lovedTracks = self.loadAllLovedTracks(self.username)
+
         artistCount = len(self.lovedTracks.keys())
         trackCount = len(self.lovedTracks.values())
         self.history = History(artistCount if artistCount < MAX_ARTIST_COUNT else MAX_ARTIST_COUNT, trackCount * 2 / 3)
         random.seed()
-        pass
+
+        lastfmUser = ''
+        try:
+            lastfmAddon = xbmcaddon.Addon('service.scrobbler.lastfm')
+            lastfmUser = lastfmAddon.getSetting('lastfmuser')
+        except RuntimeError:
+            pass
+        if 0 < len(lastfmUser):
+            self.loadRecentTracks(lastfmUser)
+
+        if self.dlgProgress.iscanceled() or self.lovedTracks is None:
+            self.dlgProgress.close()
+            self.dlgProgress = None
+            return False
+
+        return True
 
     def play(self):
         log('play', SESSION)
         self.stopped = False
         nextItem = self.generateNextTrack()
+        self.dlgProgress.update(100)
         playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         playlist.clear()
         playlist.add(nextItem[0], nextItem[1])
+        self.dlgProgress.close()
         xbmc.Player.play(self, playlist)
         xbmc.executebuiltin("ActivateWindow(%d)" % (self.WINDOW,))
         pass
@@ -122,8 +144,31 @@ class OpenlastPlayer(xbmc.Player):
 
         return resp
 
+    def loadRecentTracks(self, username):
+        url = build_url(lastfmApi, {'method': 'user.getrecenttracks', 'user': username,
+                        'format': 'json', 'api_key': lastfmApiKey, 'limit': 200, 'page': 1})
+        # xbmc.log(url)
+        reply = urllib.urlopen(url)
+        # xbmc.log(str(reply))
+        resp = json.load(reply)
+        if "error" in resp:
+            raise Exception("Error! DATA: " + str(resp))
+        else:
+            # xbmc.log(str(resp))
+            log('Successfully loaded recent tracks', SESSION)
+
+            if self.dlgProgress.iscanceled():
+                return None
+            self.dlgProgress.update(90)
+
+            for t in resp['recenttracks']['track']:
+                trackname = t['name'].lower()
+                artistname = t['artist']['#text'].lower()
+                #log(str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')), SESSION)
+                self.history.addEntry(artistname, trackname)
+
     def loadAllLovedTracks(self, username):
-        xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Loading loved tracks..."))
+        #xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Loading loved tracks..."))
         log('Loading loved tracks', SESSION)
         loaded = False
         page = 1
@@ -138,6 +183,10 @@ class OpenlastPlayer(xbmc.Player):
             totalPages = int(resp['lovedtracks']['@attr']['totalPages'])
             page += 1
             loaded = (page > totalPages)
+
+            if self.dlgProgress.iscanceled():
+                return None
+            self.dlgProgress.update(page * 100 / (totalPages + 1))
 
             for t in resp['lovedtracks']['track']:
                 # xbmc.log(json.dumps(t).encode('utf-8'))
@@ -270,7 +319,7 @@ class OpenlastPlayer(xbmc.Player):
 
     def generatePlaylist(self, username):
         artists = self.loadAllLovedTracks(username)
-        xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Finding local songs..."))
+        #xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Finding local songs..."))
         log('Finding local songs...', SESSION)
         totalTracks = 0
         items = []
@@ -281,7 +330,7 @@ class OpenlastPlayer(xbmc.Player):
 
         log("Found " + str(len(items)) + " tracks from " + str(totalTracks), SESSION)
 
-        xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Generating playlist..."))
+        #xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Generating playlist..."))
         log('Generating a playlist', SESSION)
         playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         playlist.clear()

@@ -108,13 +108,18 @@ elif folder[0] == 'lastfm':
 
     elif action[0] == 'lovedTracks':
         player = OpenlastPlayer()
-        player.init(username)
-        player.play()
-
-        while(not xbmc.abortRequested and not player.stopped):
+        success = player.init(username)
+        if success:
+            # Stop a player if any
+            xbmc.Player().stop()
             xbmc.sleep(500)
 
-        log('playback stopped', SESSION)
+            player.play()
+
+            while(not xbmc.abortRequested and not player.stopped):
+                xbmc.sleep(500)
+
+            log('playback stopped', SESSION)
 
 xbmcplugin.endOfDirectory(addon_handle)
 log('end -----------------------------------------------------', SESSION)
