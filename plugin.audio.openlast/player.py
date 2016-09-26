@@ -186,7 +186,7 @@ class OpenlastPlayer(xbmc.Player):
 
             if self.dlgProgress.iscanceled():
                 return None
-            self.dlgProgress.update(page * 100 / (totalPages + 1))
+            self.dlgProgress.update(page * 50 / totalPages)
 
             for t in resp['lovedtracks']['track']:
                 # xbmc.log(json.dumps(t).encode('utf-8'))
@@ -362,6 +362,7 @@ class OpenlastPlayer(xbmc.Player):
 
             tryCount = 5
             while not found and 0 < tryCount:
+                tryCount = tryCount - 1
                 # Choose a track
                 t = random.randint(0, len(self.lovedTracks[artist]) - 1)
                 #log('Generated track number %i' % t, SESSION)
@@ -381,14 +382,16 @@ class OpenlastPlayer(xbmc.Player):
                     artistCount = len(self.lovedTracks.keys())
                     trackCount = len(self.lovedTracks.values())
                     self.history.rescale(artistCount if artistCount < MAX_ARTIST_COUNT else MAX_ARTIST_COUNT, trackCount * 2 / 3)
-
                     # Try to choose another track of the same artist
-                    tryCount = tryCount - 1
 
                 elif not self.history.isTrackRecentlyPlayed(self.lovedTracks[artist][t]):
                     item = res[0]
                     log('The next track is: %s - "%s"' % (item['artist'][0], item['title']), SESSION)
                     found = True
+
+                else:
+                    log('Track was recenly played: %s - "%s", skipping...' % (artist, self.lovedTracks[artist][t]), SESSION)
+                    # Try to choose another track of the same artist
 
         thumb = item['thumbnail']
         xlistitem = xbmcgui.ListItem(item['title'])
