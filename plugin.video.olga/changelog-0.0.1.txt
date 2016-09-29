@@ -1,0 +1,4 @@
+0.0.1
+    Initial version:
+      - generates a random playlist from the choosen TV show episodes
+        for the choosen time range (30, 60, 90 or custom value minutes)

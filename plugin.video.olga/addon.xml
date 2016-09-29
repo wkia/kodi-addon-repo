@@ -10,7 +10,6 @@
         <platform>all</platform>
         <language>en</language>
         <license>GPL 3.0</license>
-        <!--source>https://github.com/Bitcrusher/Rockradio-com-XBMC-plugin</source-->
         <summary lang="en">olga plugin summary</summary>
         <description lang="en">
             olga plugin description
