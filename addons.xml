@@ -32,7 +32,7 @@
     <extension point="xbmc.addon.metadata">
         <platform>all</platform>
         <language>en</language>
-        <license>GPL 3.0</license>
+        <license>GPL 2.0</license>
         <summary lang="en">olga plugin summary</summary>
         <description lang="en">
             olga plugin description
