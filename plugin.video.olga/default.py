@@ -15,9 +15,10 @@ else:
 
 from logging import log
 from util import build_url
+
 __addon__ = xbmcaddon.Addon()
 #__addonid__ = __addon__.getAddonInfo('id')
-#__settings__ = xbmcaddon.Addon(id='xbmc-vk.svoka.com')
+#__settings__ = xbmcaddon.Addon(id=__addonid__)
 #__language__ = __settings__.getLocalizedString
 #LANGUAGE     = __addon__.getLocalizedString
 ADDONVERSION = __addon__.getAddonInfo('version')
@@ -28,14 +29,14 @@ SESSION = 'olga'
 log('start -----------------------------------------------------', SESSION)
 log('script version %s started' % ADDONVERSION, SESSION)
 
-# xbmc.log(str(sys.argv))
+#xbmc.log(str(sys.argv))
 addonUrl = sys.argv[0]
 addon_handle = int(sys.argv[1])
 args = urlparse.parse_qs(sys.argv[2][1:])
+#xbmc.log(str(args))
 
 xbmcplugin.setContent(addon_handle, 'video')
 
-xbmc.log(str(args))
 minuteCount = args.get('minutes', None)
 tvshowid = args.get('tvshowid', None)
 
@@ -66,7 +67,7 @@ def getTvshows():
     }
 
     rpcresp = xbmc.executeJSONRPC(json.dumps(req))
-    xbmc.log(str(rpcresp))
+    #xbmc.log(str(rpcresp))
     rpcresp = json.loads(rpcresp)
     return rpcresp
 
@@ -85,7 +86,7 @@ def getEpisodes(tvshowid):
     }
 
     rpcresp = xbmc.executeJSONRPC(json.dumps(req))
-    xbmc.log(str(rpcresp))
+    #xbmc.log(str(rpcresp))
     rpcresp = json.loads(rpcresp)
     return rpcresp
 
