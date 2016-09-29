@@ -1,5 +1,8 @@
-import sys
-import urllib
+# -*- coding: utf-8 -*-
+
+#import sys
+#import urllib
+import random
 import urlparse
 import xbmcaddon
 import xbmcgui
@@ -9,163 +12,181 @@ if sys.version_info < (2, 7):
     import simplejson as json
 else:
     import json
-    
-xbmc.log('openlast: start -----------------------------------------------------')
 
-xbmc.log(str(sys.argv))
+from logging import log
+from util import build_url
+__addon__ = xbmcaddon.Addon()
+#__addonid__ = __addon__.getAddonInfo('id')
+#__settings__ = xbmcaddon.Addon(id='xbmc-vk.svoka.com')
+#__language__ = __settings__.getLocalizedString
+#LANGUAGE     = __addon__.getLocalizedString
+ADDONVERSION = __addon__.getAddonInfo('version')
+#CWD = __addon__.getAddonInfo('path').decode("utf-8")
+
+SESSION = 'olga'
+
+log('start -----------------------------------------------------', SESSION)
+log('script version %s started' % ADDONVERSION, SESSION)
+
+# xbmc.log(str(sys.argv))
 addonUrl = sys.argv[0]
 addon_handle = int(sys.argv[1])
 args = urlparse.parse_qs(sys.argv[2][1:])
 
-lastfmApi = 'http://ws.audioscrobbler.com/2.0/'
-lastfmApiKey = '47608ece2138b2edae9538f83f703457' # TODO use Openlast key
-
-lastfmAddon = xbmcaddon.Addon('service.scrobbler.lastfm')
-my_addon = xbmcaddon.Addon()
-#lastfmUser = my_addon.getSetting('lastfm_username')
-lastfmUser = lastfmAddon.getSetting('lastfmuser')
-#lastfmPass = lastfmAddon.getSetting('lastfmxxx')
-
-xbmcplugin.setContent(addon_handle, 'audio')
-
-def build_url(baseUrl, query):
-    return baseUrl + '?' + urllib.urlencode(query)
+xbmcplugin.setContent(addon_handle, 'video')
 
 xbmc.log(str(args))
-action = args.get('action', None)
-folder = args.get('folder', None)
+minuteCount = args.get('minutes', None)
+tvshowid = args.get('tvshowid', None)
 
-#xbmc.log('openlast: folder=' + str(folder)) #, xbmc.LOGDEBUG)
-#xbmc.log('openlast: action=' + str(action)) #, xbmc.LOGDEBUG)
+def getTvshows():
+    req = {
+        "jsonrpc": "2.0",
+        "method": "VideoLibrary.GetTVShows",
+        "id": 1,
+        "params": {
+            "properties": ["genre", "title", "originaltitle",
+                "playcount", "file",
+                #"year", "rating"
+                #"thumbnail", "art", "fanart"
+                ],
+            "limits": {"start": 0, "end": 1000},
+            "sort": {"order": "ascending", "method": "title"},
+        #    "filter": {"and": [
+        #        {"field": "artist", "operator": "is", "value": artistname.encode('utf-8')},
+        #        {"or": [
+        #            #{"field": "title", "operator": "is", "value": trackname.lower().encode('utf-8')}
+        #            {"field": "title", "operator": "startswith", "value": chars0.encode('utf-8')},
+        #            {"field": "title", "operator": "startswith", "value": chars1.encode('utf-8')},
+        #            {"field": "title", "operator": "startswith", "value": chars2.encode('utf-8')},
+        #            {"field": "title", "operator": "startswith", "value": chars3.encode('utf-8')},
+        #        ]}
+        #    ]}
+        }
+    }
 
-if folder is None:
+    rpcresp = xbmc.executeJSONRPC(json.dumps(req))
+    xbmc.log(str(rpcresp))
+    rpcresp = json.loads(rpcresp)
+    return rpcresp
 
-    if '' != lastfmUser :
-        url = build_url(addonUrl, {'folder': 'lastfm', 'username': lastfmUser})
-        xbmc.log(url)
-        li = xbmcgui.ListItem('Last.FM radio (' + lastfmUser + ')', iconImage='DefaultFolder.png')
-        xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
-                                
-    url = build_url(addonUrl, {'folder': 'lastfm'})
-    li = xbmcgui.ListItem('Last.FM radio for user...', iconImage='DefaultFolder.png')
-    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
-                                
-elif folder[0] == 'lastfm' :
 
-    username = ''
-    if None != args.get('username') :
-        username = args.get('username')[0]
+def getEpisodes(tvshowid):
+    req = {
+        "jsonrpc": "2.0",
+        "method": "VideoLibrary.GetEpisodes",
+        "id": 1,
+        "params": {
+            "tvshowid": tvshowid,
+            "properties": ["title", "runtime", "file", "lastplayed", "thumbnail"],
+            "limits": {"start": 0, "end": 1000},
+            "sort": {"order": "ascending", "method": "lastplayed"},
+        }
+    }
 
-    if username == '' :
+    rpcresp = xbmc.executeJSONRPC(json.dumps(req))
+    xbmc.log(str(rpcresp))
+    rpcresp = json.loads(rpcresp)
+    return rpcresp
+
+
+
+if tvshowid is None:
+
+    tvshows = getTvshows()
+    found = 0 < int(tvshows['result']['limits']['end'])
+    if found :
+        for e in tvshows['result']['tvshows']:
+            url = build_url(addonUrl, {'tvshowid': e['tvshowid']})
+            li = xbmcgui.ListItem(e['title'], iconImage='DefaultFolder.png')
+            xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+
+elif minuteCount is None:
+
+    tvshowid = int(tvshowid[0])
+    #minRuntime = 0
+    #maxRuntime = 0
+    #episodeCount = 0
+
+    #episodes = getEpisodes(tvshowid)
+    #found = 0 < int(episodes['result']['limits']['end'])
+    #if found :
+    #    episodes = episodes['result']['episodes']
+    #    episodeCount = len(episodes)
+    #    minRuntime = episodes[0]['runtime']
+    #    maxRuntime = episodes[-1]['runtime']
+
+    url = build_url(addonUrl, {'tvshowid': tvshowid, 'minutes': 30})
+    li = xbmcgui.ListItem('30 minutes', iconImage='DefaultFolder.png')
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+    url = build_url(addonUrl, {'tvshowid': tvshowid, 'minutes': 60})
+    li = xbmcgui.ListItem('60 minutes', iconImage='DefaultFolder.png')
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+    url = build_url(addonUrl, {'tvshowid': tvshowid, 'minutes': 90})
+    li = xbmcgui.ListItem('90 minutes', iconImage='DefaultFolder.png')
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+    url = build_url(addonUrl, {'tvshowid': tvshowid, 'minutes': 0})
+    li = xbmcgui.ListItem('Custom length...', iconImage='DefaultFolder.png')
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+
+else:
+
+    tvshowid = int(tvshowid[0])
+    minuteCount = int(minuteCount[0])
+
+    if 0 == minuteCount:
         user_keyboard = xbmc.Keyboard()
-        user_keyboard.setHeading('Last.FM user name') #__language__(30001))
+        user_keyboard.setHeading('Set custom playlist length in minutes')  # __language__(30001))
         user_keyboard.setHiddenInput(False)
-        user_keyboard.setDefault(lastfmUser)
+        user_keyboard.setDefault("60")
         user_keyboard.doModal()
         if user_keyboard.isConfirmed():
-            username = user_keyboard.getText()
+            # int() throws an exception if falied
+            minuteCount = int(user_keyboard.getText())
+            if 0 >= minuteCount:
+                raise Exception("Wrong length value")
         else:
             raise Exception("Login input was cancelled.")
-    
-    if action is None :
-        url = build_url(lastfmApi, {'method': 'user.getInfo', 'user': username, 'format': 'json', 'api_key': lastfmApiKey})
-        reply = urllib.urlopen(url)
-        resp = json.load(reply)
-        if "error" in resp:
-            raise Exception("Error! DATA: " + str(resp))
-        else:
-            xbmc.log(str(resp))
 
-        img = resp['user']['image'][2]['#text']
-        if '' == img :
-            img = 'DefaultAudio.png'
-        
-    if action is None:
-        url = build_url(addonUrl, {'folder': folder[0], 'action': 'lovedTracks', 'username': username})
-        li = xbmcgui.ListItem('Listen to loved tracks', iconImage=img)
-        xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+    # Generate random playlist
+    xbmc.Player().stop()
+    xbmc.sleep(500)
+    random.seed()
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+    playlist.clear()
+    secondCount = minuteCount * 60
+    #minRuntime = 0
+    #maxRuntime = 0
+    #episodeCount = 0
 
-    elif action[0] == 'lovedTracks':
-        url = build_url(lastfmApi, {'method': 'user.getlovedtracks', 'user': lastfmUser, 'format': 'json', 'api_key': lastfmApiKey, 'limit': 200})
-        xbmc.log(url)
-        reply = urllib.urlopen(url)
-        xbmc.log(str(reply))
-        resp = json.load(reply)
-        if "error" in resp:
-            raise Exception("Error! DATA: " + str(resp))
-        else:
-            xbmc.log(str(resp))
+    episodes = getEpisodes(tvshowid)
+    found = 0 < int(episodes['result']['limits']['end'])
+    if found :
+        episodes = episodes['result']['episodes']
+        #minRuntime = episodes[0]['runtime']
+        #maxRuntime = episodes[-1]['runtime']
 
-        for a in resp['lovedtracks']['@attr'] :
-            xbmc.log(str(a)  + ': ' + resp['lovedtracks']['@attr'][str(a)])
-        for t in resp['lovedtracks']['track'] :
-            #xbmc.log(json.dumps(t).encode('utf-8'))
-            trackname = t['name']
-            artistname = t['artist']['name']
-	    #xbmc.log(str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
-            req = {
-                "jsonrpc": "2.0", 
-                "method": "JSONRPC.Version",
-                "id": "1",
-                "params": []
-            }
-            
-            # Find artists with name starts with ...
-            chars0 = artistname[0].lower() + artistname[1].lower()
-            chars1 = artistname[0].upper() + artistname[1].lower()
-            chars2 = artistname[0].lower() + artistname[1].upper()
-            chars3 = artistname[0].upper() + artistname[1].upper()
-            req = {
-                "jsonrpc": "2.0", 
-                "method": "AudioLibrary.GetArtists", 
-                "id": "libSongs",
-                "params": {
-                    "limits": {"start": 0, "end": 1000}, 
-                    "sort": {"order": "ascending", "method": "track", "ignorearticle": True},
-                    "filter": { "or" : [
-                        {"field": "artist", "operator": "startswith", "value": chars0.encode('utf-8')},
-                        {"field": "artist", "operator": "startswith", "value": chars1.encode('utf-8')},
-                        {"field": "artist", "operator": "startswith", "value": chars2.encode('utf-8')},
-                        {"field": "artist", "operator": "startswith", "value": chars3.encode('utf-8')},
-                    ]}
-                }
-            }
-	    #xbmc.log(json.dumps(req))
-            rpcresp = xbmc.executeJSONRPC(json.dumps(req))
-            #xbmc.log(str(rpcresp))
-            rpcresp = json.loads(rpcresp)
-            found = 0 < int(rpcresp['result']['limits']['end'])
-            if found :
-                for art in rpcresp['result']['artists'] :
-                    if art['artist'].strip().lower() == artistname.lower() :
-                        # Found the artist
-                        #xbmc.log(str(art['artist'].encode('utf-8')))
+        while 0 < len(episodes):
+            n = random.randint(0, len(episodes) - 1)
+            item = episodes.pop(n)
 
-                        # Find the song
-                        req = {
-                            "jsonrpc": "2.0", 
-                            "method": "AudioLibrary.GetSongs", 
-                            "id": "libSongs",
-                            "params": {
-                                "properties": ["artist", "duration", "album", "title"], 
-                                "limits": {"start": 0, "end": 1000}, 
-                                "sort": {"order": "ascending", "method": "track", "ignorearticle": True},
-                                "filter": { "and": [
-                                    {"field": "artist", "operator": "is", "value": art['artist'].encode('utf-8')},
-                                    {"field": "title", "operator": "is", "value": trackname.encode('utf-8')}
-                                ] }
-                            }
-                        }
-                        rpcresp2 = xbmc.executeJSONRPC(json.dumps(req))
-                        #xbmc.log(str(rpcresp2))
-                        rpcresp2 = json.loads(rpcresp2)
-                        found2 = 0 < int(rpcresp2['result']['limits']['end'])
-                        if found2 :
-                            strInd = '+++ '
-                        else :
-                            strInd = '    '
-                        xbmc.log(strInd + str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
+            if secondCount < item['runtime'] and secondCount < item['runtime'] / 2:
+                continue
+            secondCount = secondCount - item['runtime']
+
+            xlistitem = xbmcgui.ListItem(item['title'])
+            xlistitem.setInfo("video", infoLabels={"Title": item['title']})
+            xlistitem.setArt({'thumb': item['thumbnail']})  # , 'fanart': thumb})
+            playlist.add(item['file'], xlistitem)
+            log(item['title'], SESSION)
+
+    else:
+        # No series found
+        raise Exception("No series found")
+
+    #xbmc.executebuiltin("ActivateWindow(%d)" % (10000,))
+    xbmc.Player().play(playlist)
 
 
 xbmcplugin.endOfDirectory(addon_handle)
-
+log('end -----------------------------------------------------', SESSION)
