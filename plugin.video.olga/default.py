@@ -79,6 +79,7 @@ def getEpisodes(tvshowid):
         "id": 1,
         "params": {
             "tvshowid": tvshowid,
+            #"season": -1,
             "properties": ["title", "runtime", "file", "lastplayed", "thumbnail"],
             "limits": {"start": 0, "end": 1000},
             "sort": {"order": "ascending", "method": "lastplayed"},
@@ -90,6 +91,10 @@ def getEpisodes(tvshowid):
     rpcresp = json.loads(rpcresp)
     return rpcresp
 
+
+def getDuration(item):
+    # TODO Retrieve 'real' runtime for the item['file']
+    return item["runtime"]
 
 
 if tvshowid is None:
@@ -171,9 +176,12 @@ else:
             n = random.randint(0, len(episodes) - 1)
             item = episodes.pop(n)
 
-            if secondCount < item['runtime'] and secondCount < item['runtime'] / 2:
+            #xbmc.log(str(item))
+            duration = getDuration(item)
+            if secondCount < duration and secondCount < duration / 2:
                 continue
-            secondCount = secondCount - item['runtime']
+            secondCount = secondCount - duration
+            #log("time remain = %d" % secondCount, SESSION)
 
             xlistitem = xbmcgui.ListItem(item['title'])
             xlistitem.setInfo("video", infoLabels={"Title": item['title']})
@@ -186,6 +194,7 @@ else:
         raise Exception("No series found")
 
     #xbmc.executebuiltin("ActivateWindow(%d)" % (10000,))
+    playlist.shuffle()
     xbmc.Player().play(playlist)
 
 
