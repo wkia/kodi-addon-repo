@@ -1,9 +1,0 @@
-0.1.1
-    Improved searching local songs
-
-0.1.0
-    Initial version:
-      - loads loved tracks from Last.fm, 
-        finds loved tracks in the media library 
-        and generate a playlist and starts playing
-      - if 'service.scrobbler.lastfm' addon installed, uses 'username' as default
