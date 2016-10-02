@@ -80,7 +80,7 @@ def getEpisodes(tvshowid):
         "params": {
             "tvshowid": tvshowid,
             #"season": -1,
-            "properties": ["title", "runtime", "file", "lastplayed", "thumbnail"],
+            "properties": ["title", "runtime", "file", "lastplayed", "thumbnail", "streamdetails"],
             "limits": {"start": 0, "end": 1000},
             "sort": {"order": "ascending", "method": "lastplayed"},
         }
@@ -93,8 +93,14 @@ def getEpisodes(tvshowid):
 
 
 def getDuration(item):
-    # TODO Retrieve 'real' runtime for the item['file']
-    return item["runtime"]
+    duration = 0
+    if item["streamdetails"] is not None and item["streamdetails"]["video"] is not None and 0 < len(item["streamdetails"]["video"]):
+        for e in item["streamdetails"]["video"]:
+            duration = duration + e["duration"]
+    else:
+        duration = item["runtime"]
+
+    return duration
 
 
 if tvshowid is None:
@@ -178,16 +184,16 @@ else:
 
             #xbmc.log(str(item))
             duration = getDuration(item)
-            if secondCount < duration and secondCount < duration / 2:
+            if 0 == duration or (secondCount < duration and secondCount < duration / 2):
                 continue
             secondCount = secondCount - duration
-            #log("time remain = %d" % secondCount, SESSION)
+            #log("duration = %d, time remain = %d" % (duration, secondCount), SESSION)
 
             xlistitem = xbmcgui.ListItem(item['title'])
             xlistitem.setInfo("video", infoLabels={"Title": item['title']})
             xlistitem.setArt({'thumb': item['thumbnail']})  # , 'fanart': thumb})
             playlist.add(item['file'], xlistitem)
-            log(item['title'], SESSION)
+            #log(item['title'], SESSION)
 
     else:
         # No series found
