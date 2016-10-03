@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#import sys
-#import urllib
 import random
 import urlparse
 import xbmcaddon
@@ -46,23 +44,9 @@ def getTvshows():
         "method": "VideoLibrary.GetTVShows",
         "id": 1,
         "params": {
-            "properties": ["genre", "title", "originaltitle",
-                "playcount", "file",
-                #"year", "rating"
-                #"thumbnail", "art", "fanart"
-                ],
+            "properties": ["genre", "title", "originaltitle", "playcount", "file"],
             "limits": {"start": 0, "end": 1000},
             "sort": {"order": "ascending", "method": "title"},
-        #    "filter": {"and": [
-        #        {"field": "artist", "operator": "is", "value": artistname.encode('utf-8')},
-        #        {"or": [
-        #            #{"field": "title", "operator": "is", "value": trackname.lower().encode('utf-8')}
-        #            {"field": "title", "operator": "startswith", "value": chars0.encode('utf-8')},
-        #            {"field": "title", "operator": "startswith", "value": chars1.encode('utf-8')},
-        #            {"field": "title", "operator": "startswith", "value": chars2.encode('utf-8')},
-        #            {"field": "title", "operator": "startswith", "value": chars3.encode('utf-8')},
-        #        ]}
-        #    ]}
         }
     }
 
@@ -116,17 +100,6 @@ if tvshowid is None:
 elif minuteCount is None:
 
     tvshowid = int(tvshowid[0])
-    #minRuntime = 0
-    #maxRuntime = 0
-    #episodeCount = 0
-
-    #episodes = getEpisodes(tvshowid)
-    #found = 0 < int(episodes['result']['limits']['end'])
-    #if found :
-    #    episodes = episodes['result']['episodes']
-    #    episodeCount = len(episodes)
-    #    minRuntime = episodes[0]['runtime']
-    #    maxRuntime = episodes[-1]['runtime']
 
     url = build_url(addonUrl, {'tvshowid': tvshowid, 'minutes': 30})
     li = xbmcgui.ListItem('30 minutes', iconImage='DefaultFolder.png')
@@ -175,25 +148,32 @@ else:
     found = 0 < int(episodes['result']['limits']['end'])
     if found :
         episodes = episodes['result']['episodes']
+        num = int(len(episodes) / 2)
+        episodesRecent = episodes[num:]
+        episodes = episodes[:num]
         #minRuntime = episodes[0]['runtime']
         #maxRuntime = episodes[-1]['runtime']
 
         while 0 < len(episodes):
             n = random.randint(0, len(episodes) - 1)
             item = episodes.pop(n)
+            if 0 == len(episodes) and 0 < len(episodesRecent):
+                num = int(len(episodesRecent)/2 + 1)
+                episodes = episodesRecent[:num]
+                episodesRecent = episodesRecent[num:]
 
             #xbmc.log(str(item))
             duration = getDuration(item)
-            if 0 == duration or (secondCount < duration and secondCount < duration / 2):
+            if 0 == duration:
                 continue
             secondCount = secondCount - duration
-            #log("duration = %d, time remain = %d" % (duration, secondCount), SESSION)
+            if secondCount <= 0 or secondCount < duration / 2:
+                break
 
             xlistitem = xbmcgui.ListItem(item['title'])
             xlistitem.setInfo("video", infoLabels={"Title": item['title']})
             xlistitem.setArt({'thumb': item['thumbnail']})  # , 'fanart': thumb})
             playlist.add(item['file'], xlistitem)
-            #log(item['title'], SESSION)
 
     else:
         # No series found
