@@ -1,3 +1,6 @@
+0.0.2
+    - Some improvements
+
 0.0.1
     Initial version:
       - generates a random playlist from the choosen TV show episodes

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.olga" name="olga" version="0.0.1" provider-name="olga author">
+<addon id="plugin.video.olga" name="Olga" version="0.0.2" provider-name="wkia">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
+        <import addon="script.module.simplejson" version="3.3.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
