@@ -22,7 +22,7 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.olga" name="Olga" version="0.0.2" provider-name="wkia">
+<addon id="plugin.video.olga" name="Olga" version="0.0.3" provider-name="wkia">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.simplejson" version="3.3.0"/>
