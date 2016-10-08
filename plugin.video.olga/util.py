@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import errno
 import os
 import urllib
 
@@ -15,6 +16,13 @@ class FileLock:
 
     def acquire(self):
         try:
+            # Remove file if it's not removed before
+            try:
+                os.remove(self.filename)
+            except OSError as e:
+                if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
+                    raise
+
             self.fd = os.open(self.filename, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             # Only needed to let readers know who's locked the file
             os.write(self.fd, "%d" % self.pid)

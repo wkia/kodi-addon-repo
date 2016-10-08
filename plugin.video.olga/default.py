@@ -158,8 +158,6 @@ else:
         num = int(len(episodes) / 2)
         episodesRecent = episodes[num:]
         episodes = episodes[:num]
-        #minRuntime = episodes[0]['runtime']
-        #maxRuntime = episodes[-1]['runtime']
 
         while 0 < len(episodes):
             n = random.randint(0, len(episodes) - 1)
