@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import random
+import sys
 import urlparse
 import xbmcaddon
 import xbmcgui
@@ -13,9 +14,10 @@ else:
 
 from logging import log
 from util import build_url
+from util import FileLock
 
 __addon__ = xbmcaddon.Addon()
-#__addonid__ = __addon__.getAddonInfo('id')
+__addonid__ = __addon__.getAddonInfo('id')
 #__settings__ = xbmcaddon.Addon(id=__addonid__)
 #__language__ = __settings__.getLocalizedString
 #LANGUAGE     = __addon__.getLocalizedString
@@ -116,6 +118,14 @@ elif minuteCount is None:
 
 else:
 
+    filename = xbmc.translatePath("special://temp/" + __addonid__)
+    #log('acquiring lock for %s...' % filename, SESSION)
+    lock = FileLock(filename)
+    if not lock.acquire():
+        log('lock for %s is busy' % filename, SESSION)
+        sys.exit(0)
+    #log('acquired lock for %s' % filename, SESSION)
+
     tvshowid = int(tvshowid[0])
     minuteCount = int(minuteCount[0])
 
@@ -131,7 +141,7 @@ else:
             if 0 >= minuteCount:
                 raise Exception("Wrong length value")
         else:
-            raise Exception("Login input was cancelled.")
+            sys.exit(0)
 
     # Generate random playlist
     xbmc.Player().stop()
@@ -140,9 +150,6 @@ else:
     playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     playlist.clear()
     secondCount = minuteCount * 60
-    #minRuntime = 0
-    #maxRuntime = 0
-    #episodeCount = 0
 
     episodes = getEpisodes(tvshowid)
     found = 0 < int(episodes['result']['limits']['end'])
@@ -167,6 +174,7 @@ else:
             if 0 == duration:
                 continue
             secondCount = secondCount - duration
+            #log("duration %d, seconds remain %d, %s" % (int(duration), int(secondCount), item['title']), SESSION)
             if secondCount <= 0 or secondCount < duration / 2:
                 break
 
