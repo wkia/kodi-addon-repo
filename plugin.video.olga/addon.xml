@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.olga" name="Olga" version="0.0.4" provider-name="wkia">
+<addon id="plugin.video.olga" name="Olga" version="1.0.0" provider-name="wkia">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.simplejson" version="3.3.0"/>
@@ -11,9 +11,10 @@
         <platform>all</platform>
         <language>en</language>
         <license>GPL 2.0</license>
-        <summary lang="en">olga plugin summary</summary>
+        <summary lang="en">Random video playlist generator</summary>
         <description lang="en">
-            olga plugin description
+            The Olga plugin generates a random playlist from the choosen TV show episodes for the choosen
+            time range (30, 60, 90 or custom value minutes).
         </description>
     </extension>
 </addon>
