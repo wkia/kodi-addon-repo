@@ -190,9 +190,9 @@ def playVideo(tvshowid, minuteCount):
         duration = getDuration(item)
         if 0 == duration:
             continue
-        secondCount = secondCount - duration
+
         #log("duration %d, seconds remain %d, %s" % (int(duration), int(secondCount), item['title']))
-        if secondCount <= 0 or secondCount < duration / 2:
+        if duration > secondCount and (duration - secondCount) > duration / 2:
             break
 
         xlistitem = xbmcgui.ListItem(item['title'])
@@ -200,8 +200,12 @@ def playVideo(tvshowid, minuteCount):
         xlistitem.setArt({'thumb': item['thumbnail']})  # , 'fanart': thumb})
         playlist.add(item['file'], xlistitem)
 
+        secondCount = secondCount - duration
+        if secondCount <= 0:
+            break
+
     #log('--- starting player')
-    playlist.shuffle()
+    #playlist.shuffle()
     xbmc.Player().play(playlist)
 
 
