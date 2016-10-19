@@ -1,3 +1,6 @@
+1.0.1
+    - Small fixes
+
 1.0.0
     - Generates a random playlist from the choosen TV show episodes for the choosen
       time range (30, 60, 90 or custom value minutes);
