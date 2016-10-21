@@ -3,7 +3,7 @@
 import xbmc
 import xbmcaddon
 
-__addon__ = xbmcaddon.Addon()
+__addon__ = xbmcaddon.Addon(id='plugin.audio.openlast')
 __addonid__ = __addon__.getAddonInfo('id')
 
 def log(txt):

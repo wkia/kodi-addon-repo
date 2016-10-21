@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import sys
 import urllib
 import urlparse
@@ -22,7 +23,7 @@ __addon__ = xbmcaddon.Addon()
 #__language__ = __settings__.getLocalizedString
 #LANGUAGE     = __addon__.getLocalizedString
 ADDONVERSION = __addon__.getAddonInfo('version')
-#CWD = __addon__.getAddonInfo('path').decode("utf-8")
+CWD = __addon__.getAddonInfo('path').decode("utf-8")
 
 log('start -----------------------------------------------------')
 log('script version %s started' % ADDONVERSION)
@@ -48,7 +49,7 @@ try:
 except RuntimeError:
     pass
 
-xbmc.log(str(args))
+#xbmc.log(str(args))
 action = args.get('action', None)
 folder = args.get('folder', None)
 
@@ -107,18 +108,8 @@ elif folder[0] == 'lastfm':
         xbmcplugin.endOfDirectory(addon_handle)
 
     elif action[0] == 'lovedTracks':
-        player = OpenlastPlayer()
-        success = player.init(username)
-        if success:
-            # Stop a player if any
-            xbmc.Player().stop()
-            xbmc.sleep(500)
-
-            player.play()
-
-            while(not xbmc.abortRequested and not player.stopped):
-                xbmc.sleep(500)
-
-            log('playback stopped')
+        script = os.path.join(CWD, "run_app.py")
+        log('running script %s...' % script)
+        xbmc.executebuiltin('XBMC.RunScript(%s, %s)' % (script, username))
 
 log('end -----------------------------------------------------')

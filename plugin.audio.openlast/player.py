@@ -112,9 +112,9 @@ class OpenlastPlayer(xbmc.Player):
         track = str(self.getMusicInfoTag().getTrack())
         path = self.getPlayingFile().decode("utf-8")
         thumb = xbmc.getCacheThumbName(path)
-        log('artist: ' + artist)
-        log('title: ' + title)
-        log('album: ' + album)
+        #log('artist: ' + artist)
+        #log('title: ' + title)
+        #log('album: ' + album)
         #log('track: ' + str(track))
         #log('duration: ' + str(duration))
         #log('path: ' + path)
@@ -163,7 +163,6 @@ class OpenlastPlayer(xbmc.Player):
                 trackname = t['name'].lower()
                 artistname = t['artist']['#text'].lower()
                 #log(str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
-                log("History: %s - %s" % (artistname, trackname))
                 self.history.addEntry(artistname, trackname)
 
     def loadAllLovedTracks(self, username):
