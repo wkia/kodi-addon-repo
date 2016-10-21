@@ -24,10 +24,8 @@ __addon__ = xbmcaddon.Addon()
 ADDONVERSION = __addon__.getAddonInfo('version')
 #CWD = __addon__.getAddonInfo('path').decode("utf-8")
 
-SESSION = 'openlast'
-
-log('start -----------------------------------------------------', SESSION)
-log('script version %s started' % ADDONVERSION, SESSION)
+log('start -----------------------------------------------------')
+log('script version %s started' % ADDONVERSION)
 
 # xbmc.log(str(sys.argv))
 addonUrl = sys.argv[0]
@@ -68,6 +66,7 @@ if folder is None:
     url = build_url(addonUrl, {'folder': 'lastfm'})
     li = xbmcgui.ListItem('Last.FM radio for user...', iconImage='DefaultFolder.png')
     xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+    xbmcplugin.endOfDirectory(addon_handle)
 
 elif folder[0] == 'lastfm':
 
@@ -105,6 +104,7 @@ elif folder[0] == 'lastfm':
         url = build_url(addonUrl, {'folder': folder[0], 'action': 'lovedTracks', 'username': username})
         li = xbmcgui.ListItem('Listen to loved tracks', iconImage=img)
         xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+        xbmcplugin.endOfDirectory(addon_handle)
 
     elif action[0] == 'lovedTracks':
         player = OpenlastPlayer()
@@ -119,7 +119,6 @@ elif folder[0] == 'lastfm':
             while(not xbmc.abortRequested and not player.stopped):
                 xbmc.sleep(500)
 
-            log('playback stopped', SESSION)
+            log('playback stopped')
 
-xbmcplugin.endOfDirectory(addon_handle)
-log('end -----------------------------------------------------', SESSION)
+log('end -----------------------------------------------------')

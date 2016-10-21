@@ -16,8 +16,6 @@ from history import History
 from logging import log
 from util import build_url
 
-SESSION = 'openlast'
-
 lastfmApi = 'http://ws.audioscrobbler.com/2.0/'
 lastfmApiKey = '47608ece2138b2edae9538f83f703457'  # TODO use Openlast key
 
@@ -28,7 +26,7 @@ class OpenlastPlayer(xbmc.Player):
     WINDOW = 12006 # music visualization
 
     def __init__(self):
-        log('creating player class', SESSION)
+        log('creating player class')
         xbmc.Player.__init__(self)
         self.history = None
         self.lovedTracks = None
@@ -38,9 +36,9 @@ class OpenlastPlayer(xbmc.Player):
         pass
 
     def init(self, username):
-        log('initializing player class, username=%s' % username, SESSION)
+        log('initializing player class, username=%s' % username)
         self.dlgProgress = xbmcgui.DialogProgress()
-        self.dlgProgress.create(SESSION, 'Initializing addon...')
+        self.dlgProgress.create('Openlast', 'Initializing addon...')
         self.dlgProgress.update(0)
 
         self.username = username
@@ -68,7 +66,7 @@ class OpenlastPlayer(xbmc.Player):
         return True
 
     def play(self):
-        log('play', SESSION)
+        log('play')
         self.stopped = False
         nextItem = self.generateNextTrack()
         self.dlgProgress.update(100)
@@ -81,7 +79,7 @@ class OpenlastPlayer(xbmc.Player):
         pass
 
     def onPlayBackStarted(self):
-        log('onPlayBackStarted', SESSION)
+        log('onPlayBackStarted')
         # tags are not available instantly and we don't what to announce right
         # away as the user might be skipping through the songs
         xbmc.sleep(500)
@@ -98,7 +96,7 @@ class OpenlastPlayer(xbmc.Player):
         pass
 
     def onPlayBackStopped(self):
-        log('onPlayBackStopped', SESSION)
+        log('onPlayBackStopped')
         self.stopped = True
         pass
 
@@ -114,18 +112,18 @@ class OpenlastPlayer(xbmc.Player):
         track = str(self.getMusicInfoTag().getTrack())
         path = self.getPlayingFile().decode("utf-8")
         thumb = xbmc.getCacheThumbName(path)
-        log('artist: ' + artist, SESSION)
-        log('title: ' + title, SESSION)
-        log('album: ' + album, SESSION)
-        #log('track: ' + str(track), SESSION)
-        #log('duration: ' + str(duration), SESSION)
-        #log('path: ' + path, SESSION)
-        #log('local path: ' + user, SESSION)
-        #log('thumb: ' + thumb, SESSION)
+        log('artist: ' + artist)
+        log('title: ' + title)
+        log('album: ' + album)
+        #log('track: ' + str(track))
+        #log('duration: ' + str(duration))
+        #log('path: ' + path)
+        #log('local path: ' + user)
+        #log('thumb: ' + thumb)
 
-        #log('cover art: ' + str(xbmc.getInfoLabel('MusicPlayer.Cover')), SESSION)
-        #log('thumb art: ' + str(xbmc.getInfoLabel('Player.Art(thumb)')), SESSION)
-        #log('fan art: ' + str(xbmc.getInfoLabel('MusicPlayer.Property(Fanart_Image)')), SESSION)
+        #log('cover art: ' + str(xbmc.getInfoLabel('MusicPlayer.Cover')))
+        #log('thumb art: ' + str(xbmc.getInfoLabel('Player.Art(thumb)')))
+        #log('fan art: ' + str(xbmc.getInfoLabel('MusicPlayer.Property(Fanart_Image)')))
 
         return [artist, title]
 
@@ -140,7 +138,7 @@ class OpenlastPlayer(xbmc.Player):
             raise Exception("Error! DATA: " + str(resp))
         else:
             # xbmc.log(str(resp))
-            log('Successfully loaded loved tracks, page:' + str(page), SESSION)
+            log('Successfully loaded loved tracks, page:' + str(page))
 
         return resp
 
@@ -155,7 +153,7 @@ class OpenlastPlayer(xbmc.Player):
             raise Exception("Error! DATA: " + str(resp))
         else:
             # xbmc.log(str(resp))
-            log('Successfully loaded recent tracks', SESSION)
+            log('Successfully loaded recent tracks')
 
             if self.dlgProgress.iscanceled():
                 return None
@@ -164,12 +162,13 @@ class OpenlastPlayer(xbmc.Player):
             for t in resp['recenttracks']['track']:
                 trackname = t['name'].lower()
                 artistname = t['artist']['#text'].lower()
-                #log(str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')), SESSION)
+                #log(str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
+                log("History: %s - %s" % (artistname, trackname))
                 self.history.addEntry(artistname, trackname)
 
     def loadAllLovedTracks(self, username):
         #xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Loading loved tracks..."))
-        log('Loading loved tracks', SESSION)
+        log('Loading loved tracks')
         loaded = False
         page = 1
         artists = {}
@@ -285,7 +284,7 @@ class OpenlastPlayer(xbmc.Player):
         found = False
         foundTrack = False
         if 'error' in rpcresp:
-            log(str(rpcresp), SESSION)
+            log(str(rpcresp))
             pass
         elif 'result' in rpcresp:
             found = 0 < int(rpcresp['result']['limits']['end'])
@@ -305,13 +304,13 @@ class OpenlastPlayer(xbmc.Player):
                             ret.append(item)
 
         if foundTrack:
-            #log(len(ret), SESSION)
+            #log(len(ret))
             a = ret[len(ret) - 1]['artist'][0]
             if artistname.lower() <> a.lower():
-                log("WARNING: artist name has leading spaces: '" + str(a.encode('utf-8')) + "'", SESSION)
+                log("WARNING: artist name has leading spaces: '" + str(a.encode('utf-8')) + "'")
 
         if not found:
-            log('NOT found artist: "' + str(artistname.encode('utf-8')) + '"', SESSION)
+            log('NOT found artist: "' + str(artistname.encode('utf-8')) + '"')
             pass
 
         return ret
@@ -320,7 +319,7 @@ class OpenlastPlayer(xbmc.Player):
     def generatePlaylist(self, username):
         artists = self.loadAllLovedTracks(username)
         #xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Finding local songs..."))
-        log('Finding local songs...', SESSION)
+        log('Finding local songs...')
         totalTracks = 0
         items = []
         for i, a in enumerate(artists):
@@ -328,10 +327,10 @@ class OpenlastPlayer(xbmc.Player):
             totalTracks += len(artists[a])
             items.extend(self.findTracks(a, artists[a]))
 
-        log("Found " + str(len(items)) + " tracks from " + str(totalTracks), SESSION)
+        log("Found " + str(len(items)) + " tracks from " + str(totalTracks))
 
         #xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Generating playlist..."))
-        log('Generating a playlist', SESSION)
+        log('Generating a playlist')
         playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         playlist.clear()
         for i, item in enumerate(items):
@@ -347,16 +346,16 @@ class OpenlastPlayer(xbmc.Player):
         return playlist
 
     def generateNextTrack(self):
-        log('Generating the next track', SESSION)
+        log('Generating the next track')
         found = False
         item = None
         while not found:
             # Choose an artist
             a = random.randint(0, len(self.lovedTracks) - 1)
-            #log('Generated artist number %i' % a, SESSION)
+            #log('Generated artist number %i' % a)
             artists = self.lovedTracks.keys()
             artist = artists[a]
-            #log('Generated artist "%s"' % artist, SESSION)
+            #log('Generated artist "%s"' % artist)
             if self.history.isArtistRecentlyPlayed(artist):
                 continue
 
@@ -365,15 +364,15 @@ class OpenlastPlayer(xbmc.Player):
                 tryCount = tryCount - 1
                 # Choose a track
                 t = random.randint(0, len(self.lovedTracks[artist]) - 1)
-                #log('Generated track number %i' % t, SESSION)
+                #log('Generated track number %i' % t)
                 res = self.findTracks(artist, [self.lovedTracks[artist][t]])
                 if len(res) == 0:
                     # Track not found
-                    log('Track not found: %s - "%s", removing...' % (artist, self.lovedTracks[artist][t]), SESSION)
+                    log('Track not found: %s - "%s", removing...' % (artist, self.lovedTracks[artist][t]))
                     # Remove non-existent track from the list
                     del self.lovedTracks[artist][t]
                     if 0 == len(self.lovedTracks[artist]):
-                        log('Artist "%s" has no more tracks, removing...' % artist, SESSION)
+                        log('Artist "%s" has no more tracks, removing...' % artist)
                         del self.lovedTracks[artist]
                         # Go to the another artist
                         tryCount = 0
@@ -386,11 +385,11 @@ class OpenlastPlayer(xbmc.Player):
 
                 elif not self.history.isTrackRecentlyPlayed(self.lovedTracks[artist][t]):
                     item = res[0]
-                    log('The next track is: %s - "%s"' % (item['artist'][0], item['title']), SESSION)
+                    log('The next track is: %s - "%s"' % (item['artist'][0], item['title']))
                     found = True
 
                 else:
-                    log('Track was recenly played: %s - "%s", skipping...' % (artist, self.lovedTracks[artist][t]), SESSION)
+                    log('Track was recently played: %s - "%s", skipping...' % (artist, self.lovedTracks[artist][t]))
                     # Try to choose another track of the same artist
 
         thumb = item['thumbnail']
