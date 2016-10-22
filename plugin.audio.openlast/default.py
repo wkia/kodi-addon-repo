@@ -14,7 +14,6 @@ else:
     import json
 
 from logging import log
-from player import OpenlastPlayer
 from util import build_url
 
 __addon__ = xbmcaddon.Addon()

@@ -1,20 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import urllib
-import urlparse
-import xbmcaddon
-import xbmcgui
-import xbmcplugin
+import player
 
-from player import OpenlastPlayer
 from logging import log
 
-#log(str(sys.argv))
-username = sys.argv[1]
+log(str(sys.argv))
+log(str(sys.argv[1:]))
 
-player = OpenlastPlayer()
-success = player.init(username)
+playerObj = player.LovedTracksPlayer()
+success = playerObj.init(*sys.argv[1:])
 
 if not success:
     log('failed initializing addon')
@@ -25,9 +20,9 @@ else:
     xbmc.Player().stop()
     xbmc.sleep(700)
 
-    player.play()
+    playerObj.play()
 
-    while(not xbmc.abortRequested and not player.stopped):
+    while(not xbmc.abortRequested and not playerObj.stopped):
         xbmc.sleep(500)
 
     log('playback stopped')

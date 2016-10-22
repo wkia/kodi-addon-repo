@@ -22,7 +22,7 @@ lastfmApiKey = '47608ece2138b2edae9538f83f703457'  # TODO use Openlast key
 
 MAX_ARTIST_COUNT = 10
 
-class OpenlastPlayer(xbmc.Player):
+class LovedTracksPlayer(xbmc.Player):
 
     WINDOW = 12006 # music visualization
 
@@ -400,3 +400,4 @@ class OpenlastPlayer(xbmc.Player):
         xlistitem.setArt({'thumb': thumb})  # , 'fanart': thumb})
 
         return [item['file'], xlistitem]
+
