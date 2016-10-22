@@ -15,6 +15,7 @@ else:
 from history import History
 from logging import log
 from util import build_url
+from util import strip_accents
 
 lastfmApi = 'http://ws.audioscrobbler.com/2.0/'
 lastfmApiKey = '47608ece2138b2edae9538f83f703457'  # TODO use Openlast key
@@ -79,7 +80,7 @@ class OpenlastPlayer(xbmc.Player):
         pass
 
     def onPlayBackStarted(self):
-        log('onPlayBackStarted')
+        #log('onPlayBackStarted')
         # tags are not available instantly and we don't what to announce right
         # away as the user might be skipping through the songs
         xbmc.sleep(500)
@@ -235,8 +236,9 @@ class OpenlastPlayer(xbmc.Player):
         #strInd = '    '
         if found:
             # xbmc.log(str(rpcresp))
+            trackname_stripped = strip_accents(trackname.strip().lower())
             for s in rpcresp['result']['songs']:
-                if trackname.lower() == s['title'].lower():
+                if trackname_stripped == strip_accents(s['title'].strip().lower()):
                     ret = s
                     break
             #if artistname.lower() <> ret['artist'][0].lower() or trackname.lower() <> ret['title'].lower():
@@ -291,8 +293,9 @@ class OpenlastPlayer(xbmc.Player):
 
         if found:
             found = False
+            artistname_stripped = strip_accents(artistname)
             for a in rpcresp['result']['artists']:
-                if a['artist'].strip().lower() == artistname:
+                if strip_accents(a['artist'].strip().lower()) == artistname_stripped:
                     #xbmc.log('Found artist: ' + str(artistname.encode('utf-8')))
                     found = True
                     # xbmc.log(str(rpcresp['result']))
@@ -306,7 +309,7 @@ class OpenlastPlayer(xbmc.Player):
             #log(len(ret))
             a = ret[len(ret) - 1]['artist'][0]
             if artistname.lower() <> a.lower():
-                log("WARNING: artist name has leading spaces: '" + str(a.encode('utf-8')) + "'")
+                log("WARNING: artist name has some differencies: '" + str(artistname.encode('utf-8')) + "' --- '" + str(a.encode('utf-8')) + "'")
 
         if not found:
             log('NOT found artist: "' + str(artistname.encode('utf-8')) + '"')
@@ -345,7 +348,7 @@ class OpenlastPlayer(xbmc.Player):
         return playlist
 
     def generateNextTrack(self):
-        log('Generating the next track')
+        #log('Generating the next track')
         found = False
         item = None
         while not found:
