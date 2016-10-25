@@ -27,7 +27,7 @@ CWD = __addon__.getAddonInfo('path').decode("utf-8")
 log('start -----------------------------------------------------')
 log('script version %s started' % ADDONVERSION)
 
-# xbmc.log(str(sys.argv))
+#xbmc.log(str(sys.argv))
 addonUrl = sys.argv[0]
 addon_handle = int(sys.argv[1])
 args = urlparse.parse_qs(sys.argv[2][1:])
@@ -52,8 +52,8 @@ except RuntimeError:
 action = args.get('action', None)
 folder = args.get('folder', None)
 
-# xbmc.log('openlast: folder=' + str(folder)) #, xbmc.LOGDEBUG)
-# xbmc.log('openlast: action=' + str(action)) #, xbmc.LOGDEBUG)
+#xbmc.log('openlast: folder=' + str(folder)) #, xbmc.LOGDEBUG)
+#xbmc.log('openlast: action=' + str(action)) #, xbmc.LOGDEBUG)
 
 if folder is None:
 
@@ -73,6 +73,10 @@ elif folder[0] == 'lastfm':
     username = ''
     if None != args.get('username'):
         username = args.get('username')[0]
+
+    playcount = 0
+    if None != args.get('playcount'):
+        playcount = int(args.get('playcount')[0])
 
     if username == '':
         user_keyboard = xbmc.Keyboard()
@@ -96,19 +100,29 @@ elif folder[0] == 'lastfm':
             # xbmc.log(str(resp))
             pass
 
+        playcount = int(resp['user']['playcount'])
         img = resp['user']['image'][2]['#text']
         if '' == img:
             img = 'DefaultAudio.png'
 
-    if action is None:
         url = build_url(addonUrl, {'folder': folder[0], 'action': 'lovedTracks', 'username': username})
         li = xbmcgui.ListItem('Listen to loved tracks', iconImage=img)
         xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+
+        url = build_url(addonUrl, {'folder': folder[0], 'action': 'topTracks', 'username': username, 'playcount': playcount})
+        li = xbmcgui.ListItem('Listen to track library', iconImage=img)
+        xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+
         xbmcplugin.endOfDirectory(addon_handle)
 
     elif action[0] == 'lovedTracks':
         script = os.path.join(CWD, "run_app.py")
         log('running script %s...' % script)
-        xbmc.executebuiltin('XBMC.RunScript(%s, %s)' % (script, username))
+        xbmc.executebuiltin('XBMC.RunScript(%s, %s, %s)' % (script, action[0], username))
+
+    elif action[0] == 'topTracks':
+        script = os.path.join(CWD, "run_app.py")
+        log('running script %s...' % script)
+        xbmc.executebuiltin('XBMC.RunScript(%s, %s, %s, %s)' % (script, action[0], username, playcount))
 
 log('end -----------------------------------------------------')

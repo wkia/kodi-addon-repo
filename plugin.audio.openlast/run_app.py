@@ -6,10 +6,18 @@ import player
 from logging import log
 
 log(str(sys.argv))
-log(str(sys.argv[1:]))
+action = sys.argv[1]
 
-playerObj = player.LovedTracksPlayer()
-success = playerObj.init(*sys.argv[1:])
+playerObj = None
+if 'lovedTracks' == action:
+    playerObj = player.LovedTracksPlayer()
+    pass
+elif 'topTracks' == action:
+    playerObj = player.TrackLibraryPlayer()
+    pass
+
+log(str(sys.argv[2:]))
+success = playerObj.init(*sys.argv[2:])
 
 if not success:
     log('failed initializing addon')
