@@ -376,6 +376,10 @@ class LovedTracksPlayer(BasePlayer):
 
             for t in resp['track']:
                 # xbmc.log(json.dumps(t).encode('utf-8'))
+                if not self._preAddTrack(t):
+                    page = totalPages
+                    loaded = True
+                    break
                 trackname = t['name'].lower()
                 artistname = t['artist']['name'].lower()
                 # xbmc.log(str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
@@ -386,6 +390,9 @@ class LovedTracksPlayer(BasePlayer):
                     artists[artistname] = [trackname]
 
         return artists
+
+    def _preAddTrack(self, track):
+        return True
 
 
 
@@ -398,6 +405,7 @@ class TrackLibraryPlayer(LovedTracksPlayer):
 
     def init(self, username, playcount):
         self.playcount = int(playcount) if 0 < int(playcount) else 1 # prevent dividing by zero
+        self.avgPlaycount = 0
         return LovedTracksPlayer.init(self, username)
 
     def loadTracks(self, username, page):
@@ -413,5 +421,14 @@ class TrackLibraryPlayer(LovedTracksPlayer):
             # xbmc.log(str(resp))
             log('Successfully loaded tracks, page:' + str(page))
 
+        total = int(resp['toptracks']['@attr']['total'])
+        self.avgPlaycount = self.playcount / total + 1
+
         return resp['toptracks']
+
+    def _preAddTrack(self, track):
+        if int(track['playcount']) < self.avgPlaycount:
+            log('...the track\'s playcount exceeds the average: avg=' + str(self.avgPlaycount))
+            return False
+        return True
 
