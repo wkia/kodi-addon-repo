@@ -113,6 +113,10 @@ elif folder[0] == 'lastfm':
         li = xbmcgui.ListItem('Listen to track library', iconImage=img)
         xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
 
+        url = build_url(addonUrl, {'folder': folder[0], 'action': 'topArtists', 'username': username, 'playcount': playcount})
+        li = xbmcgui.ListItem('Listen to artist library', iconImage=img)
+        xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+
         xbmcplugin.endOfDirectory(addon_handle)
 
     elif action[0] == 'lovedTracks':
@@ -121,6 +125,11 @@ elif folder[0] == 'lastfm':
         xbmc.executebuiltin('XBMC.RunScript(%s, %s, %s)' % (script, action[0], username))
 
     elif action[0] == 'topTracks':
+        script = os.path.join(CWD, "run_app.py")
+        log('running script %s...' % script)
+        xbmc.executebuiltin('XBMC.RunScript(%s, %s, %s, %s)' % (script, action[0], username, playcount))
+
+    elif action[0] == 'topArtists':
         script = os.path.join(CWD, "run_app.py")
         log('running script %s...' % script)
         xbmc.executebuiltin('XBMC.RunScript(%s, %s, %s, %s)' % (script, action[0], username, playcount))

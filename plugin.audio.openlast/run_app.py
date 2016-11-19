@@ -15,6 +15,9 @@ if 'lovedTracks' == action:
 elif 'topTracks' == action:
     playerObj = player.TrackLibraryPlayer()
     pass
+elif 'topArtists' == action:
+    playerObj = player.ArtistLibraryPlayer()
+    pass
 
 log(str(sys.argv[2:]))
 success = playerObj.init(*sys.argv[2:])

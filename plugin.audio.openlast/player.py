@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import random
 import sys
 import urllib
@@ -191,8 +192,11 @@ class BasePlayer(xbmc.Player):
             trackname_stripped = strip_accents(trackname.strip().lower())
             for s in rpcresp['result']['songs']:
                 if trackname_stripped == strip_accents(s['title'].strip().lower()):
-                    ret = s
-                    break
+                    if os.path.exists(xbmc.translatePath(s['file'])):
+                        ret = s
+                        break
+                    else:
+                        log("Found in library, but file doesn't exist: %s" % s['file'])
             #if artistname.lower() <> ret['artist'][0].lower() or trackname.lower() <> ret['title'].lower():
             #if ret is not None:
             #    strInd = '+++ '
@@ -269,6 +273,9 @@ class BasePlayer(xbmc.Player):
 
         return ret
 
+    def _preGenerateTrack(self, artist):
+        return True
+
     def generateNextTrack(self):
         #log('Generating the next track')
         found = False
@@ -285,6 +292,8 @@ class BasePlayer(xbmc.Player):
 
             tryCount = 5
             while not found and 0 < tryCount:
+                if not self._preGenerateTrack(artist):
+                    break
                 tryCount = tryCount - 1
                 # Choose a track
                 t = random.randint(0, len(self.tracks[artist]) - 1)
@@ -355,7 +364,7 @@ class LovedTracksPlayer(BasePlayer):
 
     def loadAllTracks(self):
         #xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Loading loved tracks..."))
-        log('Loading loved tracks')
+        log('Loading tracks...')
         loaded = False
         page = 1
         artists = {}
@@ -431,4 +440,105 @@ class TrackLibraryPlayer(LovedTracksPlayer):
             log('...the track\'s playcount exceeds the average: avg=' + str(self.avgPlaycount))
             return False
         return True
+
+
+
+class ArtistLibraryPlayer(LovedTracksPlayer):
+
+    def __init__(self):
+        log('creating player class')
+        LovedTracksPlayer.__init__(self)
+        pass
+
+    def init(self, username, playcount):
+        self.playcount = int(playcount) if 0 < int(playcount) else 1 # prevent dividing by zero
+        self.avgPlaycount = 0
+        return LovedTracksPlayer.init(self, username)
+
+    def loadAllTracks(self):
+        #xbmc.executebuiltin('Notification(%s,%s)' % (SESSION, "Loading loved tracks..."))
+        log('Loading tracks...')
+        loaded = False
+        page = 1
+        artists = {}
+        while (True != loaded):
+            resp = self.loadTracks(self.username, page)
+
+            # for a in resp['@attr']:
+            #    xbmc.log(str(a) + ': ' + resp['@attr'][str(a)])
+
+            # Track the page number
+            totalPages = int(resp['@attr']['totalPages'])
+            page += 1
+            loaded = (page > totalPages)
+
+            if self.dlgProgress.iscanceled():
+                return None
+            self.dlgProgress.update(page * 50 / totalPages)
+
+            for artist in resp['artist']:
+                # xbmc.log(json.dumps(t).encode('utf-8'))
+                if int(artist['playcount']) < self.avgPlaycount:
+                    log('...the artist\'s playcount exceeds the average: avg=' + str(self.avgPlaycount))
+                    page = totalPages
+                    loaded = True
+                    break
+                artistname = artist['name'].lower()
+                # xbmc.log(str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
+                # Put artists into the associative array
+                if not artistname in artists:
+                    artists[artistname] = []
+
+        return artists
+
+    def loadTracks(self, username, page):
+        url = build_url(lastfmApi, {'method': 'user.gettopartists', 'user': username,
+                        'format': 'json', 'api_key': lastfmApiKey, 'limit': 500, 'page': page})
+        # xbmc.log(url)
+        reply = urllib.urlopen(url)
+        # xbmc.log(str(reply))
+        resp = json.load(reply)
+        if "error" in resp:
+            raise Exception("Error! DATA: " + str(resp))
+        else:
+            # xbmc.log(str(resp))
+            log('Successfully loaded artists, page:' + str(page))
+
+        total = int(resp['topartists']['@attr']['total'])
+        self.avgPlaycount = self.playcount / total + 1
+
+        return resp['topartists']
+
+    def _preAddTrack(self, track):
+        if int(track['playcount']) < self.avgPlaycount:
+            log('...the track\'s playcount exceeds the average: avg=' + str(self.avgPlaycount))
+            return False
+        return True
+
+    def _preGenerateTrack(self, artist):
+        if 0 < len(self.tracks[artist]):
+            return True
+
+        log("Loading tracks for artist: " + str(artist.encode('utf-8')))
+        url = build_url(lastfmApi, {'method': 'artist.gettoptracks', 'artist': artist.encode('utf-8'),
+                        'format': 'json', 'api_key': lastfmApiKey})
+        # xbmc.log(url)
+        reply = urllib.urlopen(url)
+        # xbmc.log(str(reply))
+        resp = json.load(reply)
+        if "error" in resp:
+            raise Exception("Error! DATA: " + str(resp))
+        else:
+            # xbmc.log(str(resp))
+            log('Successfully loaded artist tracks')
+
+        for t in resp['toptracks']['track']:
+            trackname = t['name'].lower()
+            artistname = t['artist']['name'].lower()
+            xbmc.log(str(artistname.encode('utf-8')) + " -- " + str(trackname.encode('utf-8')))
+            # Put artists and tracks into the associative array
+            self.tracks[artist].append(trackname)
+
+        return True
+
 
