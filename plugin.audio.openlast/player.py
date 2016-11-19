@@ -192,11 +192,14 @@ class BasePlayer(xbmc.Player):
             trackname_stripped = strip_accents(trackname.strip().lower())
             for s in rpcresp['result']['songs']:
                 if trackname_stripped == strip_accents(s['title'].strip().lower()):
-                    if os.path.exists(xbmc.translatePath(s['file'])):
+                    path = xbmc.translatePath(s['file'])
+                    if os.path.exists(path):
                         ret = s
                         break
-                    else:
-                        log("Found in library, but file doesn't exist: %s" % s['file'])
+
+                    log("Found in library, but file doesn't exist: %s" % path)
+                    xbmc.executebuiltin('Notification(%s,%s, 1000)' % ("File doesn't exist", os.path.basename(path)))
+
             #if artistname.lower() <> ret['artist'][0].lower() or trackname.lower() <> ret['title'].lower():
             #if ret is not None:
             #    strInd = '+++ '
