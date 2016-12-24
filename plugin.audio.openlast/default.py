@@ -57,15 +57,20 @@ folder = args.get('folder', None)
 
 if folder is None:
 
+    url = build_url(addonUrl, {'folder': 'similarArtist'})
+    li = xbmcgui.ListItem('Similar artist radio', iconImage='DefaultFolder.png')
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+
     if '' != lastfmUser:
         url = build_url(addonUrl, {'folder': 'lastfm', 'username': lastfmUser})
         # xbmc.log(url)
-        li = xbmcgui.ListItem('Last.FM radio (' + lastfmUser + ')', iconImage='DefaultFolder.png')
+        li = xbmcgui.ListItem('Personal radio for Last.fm user: ' + lastfmUser, iconImage='DefaultFolder.png')
         xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
 
     url = build_url(addonUrl, {'folder': 'lastfm'})
-    li = xbmcgui.ListItem('Last.FM radio for user...', iconImage='DefaultFolder.png')
+    li = xbmcgui.ListItem('Personal radio for Last.fm user...', iconImage='DefaultFolder.png')
     xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=True)
+
     xbmcplugin.endOfDirectory(addon_handle)
 
 elif folder[0] == 'lastfm':
@@ -117,6 +122,10 @@ elif folder[0] == 'lastfm':
         li = xbmcgui.ListItem('Listen to artist library', iconImage=img)
         xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
 
+        url = build_url(addonUrl, {'folder': folder[0], 'action': 'syncLibrary', 'username': username, 'playcount': playcount})
+        li = xbmcgui.ListItem('[EXPERIMENTAL] Syncronize library to folder', iconImage=img)
+        xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+
         xbmcplugin.endOfDirectory(addon_handle)
 
     elif action[0] == 'lovedTracks':
@@ -133,5 +142,32 @@ elif folder[0] == 'lastfm':
         script = os.path.join(CWD, "run_app.py")
         log('running script %s...' % script)
         xbmc.executebuiltin('XBMC.RunScript(%s, %s, %s, %s)' % (script, action[0], username, playcount))
+
+    elif action[0] == 'syncLibrary':
+        script = os.path.join(CWD, "run_app.py")
+        log('running script %s...' % script)
+        xbmc.executebuiltin('XBMC.RunScript(%s, %s, %s)' % (script, action[0], username))
+
+elif folder[0] == 'similarArtist':
+    if action is None:
+        url = build_url(lastfmApi, {'method': 'chart.getTopArtists',
+                                    'format': 'json', 'api_key': lastfmApiKey})
+        reply = urllib.urlopen(url)
+        resp = json.load(reply)
+        if "error" in resp:
+            raise Exception("Error! DATA: " + str(resp))
+        else:
+            #log(str(resp))
+            pass
+
+        for a in resp['artists']['artist']:
+            url = build_url(addonUrl, {'folder': folder[0], 'action': a['name'].encode('utf-8')})
+            li = xbmcgui.ListItem(a['name'])
+            li.setArt({'icon': a['image'][2]['#text'], 'thumb': a['image'][2]['#text'], 'fanart': a['image'][4]['#text']})
+            xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li, isFolder=False)
+
+            pass
+
+    xbmcplugin.endOfDirectory(addon_handle)
 
 log('end -----------------------------------------------------')

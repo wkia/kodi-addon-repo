@@ -165,7 +165,7 @@ class BasePlayer(xbmc.Player):
             "method": "AudioLibrary.GetSongs",
             "id": "libSongs",
             "params": {
-                "properties": ["artist", "duration", "album", "title", "file", "thumbnail", "fanart"],
+                "properties": ["artist", "duration", "album", "title", "file", "thumbnail", "fanart", "track"],
                 "limits": {"start": 0, "end": 1000},
                 "sort": {"order": "ascending", "method": "track", "ignorearticle": True},
                 "filter": {"and": [
@@ -193,6 +193,7 @@ class BasePlayer(xbmc.Player):
             for s in rpcresp['result']['songs']:
                 if trackname_stripped == strip_accents(s['title'].strip().lower()):
                     path = xbmc.translatePath(s['file'])
+                    path = xbmc.validatePath(path)
                     if os.path.exists(path):
                         ret = s
                         break
